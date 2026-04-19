@@ -22,7 +22,7 @@ public class RegisterCustomerCommandTest {
     public void setUp() {
         // Initialize the receiver (Office) and the command
         parkingOffice = new ParkingOffice("Main Office", null);
-        command = new RegisterCustomerCommand(parkingOffice);
+        command = new RegisterCustomerCommand(parkingOffice) {};
     }
 
     @Test

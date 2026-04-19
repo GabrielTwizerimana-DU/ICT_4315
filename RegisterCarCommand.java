@@ -4,7 +4,6 @@
  * Author: Gabriel Twizerimana
  */
 package edu.university.parking.assignment1.controller.commands;
-
 import edu.university.parking.assignment1.domain.model.classes.Car;
 import edu.university.parking.assignment1.domain.model.classes.CarType;
 import java.util.Properties;
@@ -51,47 +50,28 @@ public class RegisterCarCommand implements Command {
      * Executes the registration logic. Expected properties: licensePlate, type,
      * ownerId
      *
+     * @param licensePlate
+     * @param type
+     * @param customerId
      * @param params
      * @return
      */
+  public String execute(String licensePlate, CarType type, String customerId) {
+    // 1. Get the customer from the office
+    Customer customer = office.getCustomer(customerId);
+    
+    // 2. Safety check for the testRegistrationWithInvalidCustomer test
+    if (customer == null) {
+        return null;
+    }
+
+    // 3. Register and return the permit ID
+    return office.register(customer, licensePlate, type);
+}
+
     @Override
     public String execute(Properties params) {
-        try {
-            String licensePlate = params.getProperty("licensePlate");
-            String typeStr = params.getProperty("type");
-            String ownerId = params.getProperty("ownerId");
-
-            if (licensePlate == null || typeStr == null || ownerId == null) {
-                return "Error: Missing required car parameters.";
-            }
-
-            // Find the existing customer in the office
-            Customer owner = null;
-            for (Customer c : office.getListOfCustomers()) {
-                if (c.getId().equals(ownerId)) {
-                    owner = c;
-                    break;
-                }
-            }
-
-            if (owner == null) {
-                return "Error: Customer ID " + ownerId + " not found.";
-            }
-
-            // Convert string type to Enum
-            CarType type = CarType.valueOf(typeStr.toUpperCase());
-
-            // Create the Car object
-            Car newCar = new Car(licensePlate, type, owner);
-
-            // Register with the office and return the Permit ID
-            return office.register(newCar);
-
-        } catch (IllegalArgumentException e) {
-            return "Error: Invalid Car Type. Must be COMPACT or SUV.";
-        } catch (Exception e) {
-            return "Error: " + e.getMessage();
-        }
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
     
     

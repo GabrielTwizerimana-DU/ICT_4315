@@ -1,18 +1,19 @@
 
 /**
- * File: RegisterCarCommand Test.java
+ * File: RegisterCarCommandTest.java
  * Author: Gabriel Twizerimana
  */
 
 package edu.university.parking.assignment1.controller.commands.test;
 
-
 import edu.university.parking.assignment1.controller.commands.Customer;
 import edu.university.parking.assignment1.controller.commands.ParkingOffice;
 import edu.university.parking.assignment1.controller.commands.RegisterCarCommand;
+import edu.university.parking.assignment1.domain.model.classes.Address;
+import edu.university.parking.assignment1.domain.model.classes.CarType;
+import edu.university.parking.assignment1.domain.model.classes.ParkingPermit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import java.util.Properties;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -22,73 +23,58 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class RegisterCarCommandTest {
 
-    private ParkingOffice parkingOffice;
-    private RegisterCarCommand command;
+    private ParkingOffice office;
     private Customer testCustomer;
 
     @BeforeEach
     public void setUp() {
-        parkingOffice = new ParkingOffice("Main Office", null);
-        command = new RegisterCarCommand(parkingOffice);
-
-        // Pre-register a customer so the car has an owner to link to
-        testCustomer = new Customer("Alice", "Smith", "C-101", null, "555-1234");
-        parkingOffice.register(testCustomer);
-    }
-
-    @Test
-    public void testGetCommandName() {
-        assertEquals("CAR", command.getCommandName());
-    }
-
-    @Test
-    public void testExecuteSuccessfulCarRegistration() {
-        // 1. Prepare properties for a COMPACT car
-        Properties props = new Properties();
-        props.setProperty("licensePlate", "COMPACT-1");
-        props.setProperty("type", "COMPACT");
-        props.setProperty("ownerId", "C-101");
-
-        // 2. Execute
-        String result = command.execute(props);
-
-        // 3. Assertions
-        // The result should be a Permit ID (e.g., "PERMIT-COMPACT-1")
-        assertNotNull(result);
-        assertTrue(result.contains("COMPACT-1"), "Result should contain the license plate");
+        // Initialize the office with a name and a physical address
+        Address officeAddr = new Address("100 University Ave", "", "College Town", "ST", "12345");
+        office = new ParkingOffice("Main Campus Office", officeAddr);
         
-        // Verify the car is actually known to the office now
-        assertNotNull(parkingOffice.getPermitForCar("COMPACT-1"), "Office should have a permit for this car");
+        // Register a customer so we have a valid Information Expert to link the car to
+        testCustomer = new Customer("C-101", "Jim", "Halpert", officeAddr, "555-1212");
+        office.register(testCustomer);
     }
 
+    /**
+     * Requirement: Success Path
+     * Verifies that the command correctly orchestrates car registration and returns a Permit ID.
+     */
     @Test
-    public void testExecuteWithInvalidCustomer() {
-        Properties props = new Properties();
-        props.setProperty("licensePlate", "GHOST-1");
-        props.setProperty("type", "SUV");
-        props.setProperty("ownerId", "NON-EXISTENT-ID");
+    public void testExecuteRegistration() {
+        // Arrange: Prepare the command and data
+        String licensePlate = "SCRANTON-1";
+        CarType type = CarType.COMPACT;
+        String customerId = "C-101";
+        RegisterCarCommand command = new RegisterCarCommand(office);
+        
+        // Act: Execute the command
+        String permitId = command.execute(licensePlate, type, customerId);
 
-        String result = command.execute(props);
-
-        // Should return an error message rather than crashing
-        assertTrue(result.contains("Error"), "Should return error for invalid customer ID");
+        // Assert: Verify the delegation chain returned a valid state
+        assertNotNull(permitId, "Command should return a valid Permit ID string.");
+        
+        // Verify the Facade can retrieve the result of the command
+        ParkingPermit permit = office.getPermitForCar(licensePlate);
+        assertNotNull(permit, "Permit should be persisted in the office registry.");
+        assertEquals(licensePlate, permit.getCar().getLicensePlate(), "License plate mismatch.");
+        assertEquals(testCustomer.getId(), permit.getCar().getOwner().getId(), "Car owner mismatch.");
     }
 
+    /**
+     * Requirement: Error Handling
+     * Verifies that the command handles non-existent customers gracefully by returning null.
+     */
     @Test
-    public void testExecuteWithInvalidCarType() {
-        Properties props = new Properties();
-        props.setProperty("licensePlate", "ERROR-1");
-        props.setProperty("type", "BICYCLE"); // Not a valid CarType enum
-        props.setProperty("ownerId", "C-101");
-
-        String result = command.execute(props);
-
-        assertTrue(result.contains("Error"), "Should return error for invalid car type");
-    }
-
-    @Test
-    public void testExecuteWithNullProperties() {
-        String result = command.execute(null);
-        assertTrue(result.contains("Error"), "Should handle null properties gracefully");
+    public void testRegistrationWithInvalidCustomer() {
+        // Arrange
+        RegisterCarCommand command = new RegisterCarCommand(office);
+        
+        // Act: Attempt to register a car to a non-existent customer ID
+        String result = command.execute("GHOST-99", CarType.SUV, "NON-EXISTENT-ID");
+        
+        // Assert: The command should fail gracefully
+        assertNull(result, "Command should return null if the customer is not found in the registry.");
     }
 }

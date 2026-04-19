@@ -1,4 +1,9 @@
 
+/**
+ * File: CommandTest.java
+ * Author: Gabriel Twizerimana
+ */
+
 package edu.university.parking.assignment1.controller.commands.test;
 
 import edu.university.parking.assignment1.controller.commands.Command;

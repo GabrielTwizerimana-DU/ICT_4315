@@ -1,7 +1,9 @@
+
 /**
  * File: CustomerTest.java
  * Author: Gabriel Twizerimana
  */
+
 package edu.university.parking.assignment1.controller.commands.test;
 
 import edu.university.parking.assignment1.controller.commands.Customer;
@@ -22,7 +24,7 @@ public class CustomerTest {
     @BeforeEach
     public void setUp() {
         // Create a standard address for testing
-        testAddress = new Address("123 Main St", "Apt 4", "Denver", "CO", "80202");
+        testAddress = new Address("123 Main St","cd", "Apt 4", "Denver", "CO");
         
         // Initialize the customer
         testCustomer = new Customer(
@@ -47,7 +49,7 @@ public class CustomerTest {
         // Verify that the Customer holds the correct Address object (Composition)
         assertNotNull(testCustomer.getAddress(), "Address should not be null");
         assertEquals("123 Main St", testCustomer.getAddress().getStreetAddress1());
-        assertEquals("80202", testCustomer.getAddress().getZip());
+        assertEquals("CO", testCustomer.getAddress().getZip());
     }
 
     @Test

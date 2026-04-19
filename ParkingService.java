@@ -1,9 +1,11 @@
-package edu.university.parking.assignment1.controller.commands;
 
 /**
  * File: Command.java 
  * Author: Gabriel Twizerimana
  */
+
+package edu.university.parking.assignment1.controller.commands;
+
 import java.util.*;
 
 public class ParkingService {
@@ -11,7 +13,7 @@ public class ParkingService {
     private final Map<String, Command> commands = new HashMap<>();
 
     public ParkingService(ParkingOffice office) {
-        commands.put("CUSTOMER", new RegisterCustomerCommand(office));
+        commands.put("CUSTOMER", new RegisterCustomerCommand(office) {});
         commands.put("CAR", new RegisterCarCommand(office));
     }
 

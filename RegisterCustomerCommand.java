@@ -1,7 +1,9 @@
+
 /**
  * File: RegisterCustomerCommand.java
  * Author: Gabriel Twizerimana
  */
+
 package edu.university.parking.assignment1.controller.commands;
 
 import edu.university.parking.assignment1.domain.model.classes.Address;
@@ -26,19 +28,25 @@ public class RegisterCustomerCommand implements Command {
 
     @Override
     public String execute(Properties params) {
+     
+        if (params == null) {
+            return "Error: No parameters provided";
+        }
+
+        // Now it is safe to proceed with extraction
         String id = params.getProperty("id");
         
         if (id == null || id.isEmpty()) {
             return "Error: Missing Customer ID";
         }
 
-        try {
+    try {
             Address addr = new Address(
                 params.getProperty("streetAddress1"),
                 params.getProperty("streetAddress2"),
                 params.getProperty("city"),
                 params.getProperty("state"),
-                params.getProperty("zip")
+                params.getProperty("zip") // Added the 5th argument
             );
 
             Customer customer = new Customer(
@@ -49,12 +57,12 @@ public class RegisterCustomerCommand implements Command {
                 params.getProperty("phone")
             );
 
-            // Using the renamed variable to register the customer
             parkingOffice.register(customer);
-            
             return id;
 
         } catch (Exception e) {
+            // This will now catch any remaining "Not supported yet" stubs 
+            // in Customer or ParkingOffice
             return "Error: Registration failed - " + e.getMessage();
         }
     }

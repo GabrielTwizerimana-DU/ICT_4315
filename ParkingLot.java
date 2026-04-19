@@ -1,72 +1,69 @@
+
 /**
  * File: ParkingLot.java
  * Author: Gabriel Twizerimana
  */
+
 package edu.university.parking.assignment1.controller.commands;
 
-import edu.university.parking.assignment1.domain.model.classes.Address;
-import edu.university.parking.assignment1.domain.model.classes.CarType;
+import edu.university.parking.assignment1.domain.model.classes.ParkingPermit;
 import edu.university.parking.assignment1.domain.model.classes.Money;
+import edu.university.parking.assignment3.strategies.ParkingChargeStrategy;
+import java.time.LocalDateTime;
 
+// The ParkingLot no longer calculates money. It simply holds a reference to a strategy.
 public class ParkingLot {
 
-    private final String id;
-    private final String name;
-    private final int address;
-
-    // Base rate stored as a Money object (e.g., 1000 cents for $10.00)
-    private final Money baseDailyRate;
+   private final String name;
+    private final Money baseRate;
+    private ParkingChargeStrategy strategy; // The "Strategy" reference
 
     /**
-     * Constructor for ParkingLot.
-     *
-     * @param id Unique identifier for the lot.
-     * @param name Human-readable name (e.g., "North Garage").
-     * @param address The physical Address object of the lot.
+     * Constructor for Release 2.
+     * Note: This replaces the 'UnsupportedOperationException' stub.
+     * @param name
+     * @param baseRate
+     * @param strategy
      */
-    public ParkingLot(String id, String name, int address) {
-        this.id = id;
+    public ParkingLot(String name, Money baseRate, ParkingChargeStrategy strategy) {
         this.name = name;
-        this.address = address;
-        // Defaulting to a $10.00 base rate for this assignment
-        this.baseDailyRate = new Money(1000, "USD");
+        this.baseRate = baseRate;
+        this.strategy = strategy;
     }
 
     /**
-     * Requirement: getDailyRate(CarType) : Money Calculates the rate for a
-     * specific car. Applies a 20% discount if the CarType is COMPACT.
-     *
-     * * @param type The CarType (COMPACT or SUV)
-     * @param type
-     * @return A new Money object representing the final charge.
+     * The core logic for the Strategy Pattern.
+     * Delegates the actual calculation to the current strategy object.
+     * @param dateTime
+     * @param permit
+     * @return 
      */
-  
-    public Money getDailyRate(CarType type) {
-    // Check for SUV to apply the 20% surcharge
-    if (type == CarType.SUV) {
-        // Apply 20% surcharge (amount * 1.2)
-        double surchargedAmount = baseDailyRate.getAmountInCents() * 1.2;
-
-        // Return a new Money object with the increased value ($12.00)
-        return new Money((long) surchargedAmount, baseDailyRate.getCurrency());
+    public Money getCharge(LocalDateTime dateTime, ParkingPermit permit) {
+        if (strategy == null) {
+            return baseRate; // Fallback if no strategy is set
+        }
+        return strategy.calculateCharge(baseRate, dateTime, permit);
     }
 
-    // Return the standard base rate ($10.00) for COMPACT or other types
-    return baseDailyRate;
-}
-
-    // --- Standard UML Getters ---
-    public String getId() {
-        return id;
+    /**
+     * Requirement: Ability to change strategies at runtime.
+     * This allows a lot to switch from 'Weekday' to 'Special Event' pricing.
+     * @param strategy
+     */
+    public void setStrategy(ParkingChargeStrategy strategy) {
+        this.strategy = strategy;
     }
 
     public String getName() {
         return name;
     }
 
-    public int getAddress() {
-        return address;
+    public Money getBaseRate() {
+        return baseRate;
     }
 
-  
+    public ParkingChargeStrategy getStrategy() {
+        return strategy;
+    }
 }
+    

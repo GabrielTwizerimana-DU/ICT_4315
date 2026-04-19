@@ -14,7 +14,7 @@ public class Customer {
 
     private final String firstName;
     private final String lastName;
-    private final String id;
+    private String id;
     private Address address;
     private String phoneNumber;
 
@@ -28,12 +28,18 @@ public class Customer {
      * @param address
      * @param phoneNumber
      */
-    public Customer(String firstName, String lastName, String id, Address address, String phoneNumber) {
+    public Customer( String firstName, String lastName, String id, Address address, String phoneNumber) {
         this.firstName = firstName;
         this.lastName = lastName;
-        this.id = id;
+         this.id = id;
         this.address = address;
         this.phoneNumber = phoneNumber;
+    }
+
+    public Customer(String c101, String alice_Smith, String _Elm_St, String string) {
+        this.firstName = null;
+        this.lastName = null;
+        this.id = null ;
     }
 
     // --- Getters ---
@@ -87,18 +93,23 @@ public class Customer {
      */
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        Customer customer = (Customer) o;
-        return Objects.equals(id, customer.id);
+      if (this == o) return true;
+    if (!(o instanceof Customer)) return false; // More flexible than getClass()
+    Customer other = (Customer) o;
+    
+    // Check if either ID is null to prevent NullPointerException
+    if (this.id == null || other.id == null) return false;
+    
+    // TRIM the IDs just in case there are hidden spaces from a database/input
+    return this.id.trim().equalsIgnoreCase(other.id.trim());
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(id);
+    }
+
+    public String getName() {
+       return firstName + "" + lastName;
     }
 }

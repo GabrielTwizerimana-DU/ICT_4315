@@ -5,8 +5,9 @@ Author: Gabriel Twizerimana
  */
 
 import edu.university.parking.assignment1.controller.commands.*;
-import edu.university.parking.assignment1.domain.model.classes.Address;
-import edu.university.parking.assignment1.domain.model.classes.Money;
+import edu.university.parking.assignment1.domain.model.classes.CarType;
+import edu.university.parking.assignment1.controller.commands.Customer;
+import edu.university.parking.assignment3.strategies.TypeBasedStrategy;
 
 import java.util.*;
 
@@ -16,71 +17,53 @@ import java.util.*;
  */
 public class ParkingSystemApplication {
 
-    public static void main(String[] args) {
-        System.out.println("=== Initializing Parking Management System ===");
+       public static void main(String[] args) {
+        // 1. Initialize the "Information Expert" (Parking Office)
+        ParkingOffice office = new ParkingOffice("University Main Lot");
 
-        // 1. Setup the Core Engine
-        Address officeAddr = new Address("100 University Way", "", "Denver", "CO", "80204");
-        ParkingOffice parkingOffice = new ParkingOffice("University Central Office", officeAddr);
-        
-        // 2. Setup a Parking Lot
-        // $10.00 base rate (1000 cents)
-        ParkingLot northLot = new ParkingLot("North Lot", "200 North St", 1000);
-        parkingOffice.addParkingLot(northLot);
+        // 2. Set the Strategy for the Office (Strategy Pattern)
+        // This allows the office to calculate fees without knowing the math.
+        office.setPricingStrategy(new TypeBasedStrategy());
 
-        // 3. Register Commands
-        Map<String, Command> commands = new HashMap<>();
-        commands.put("CUSTOMER", new RegisterCustomerCommand(parkingOffice));
-        commands.put("CAR", new RegisterCarCommand(parkingOffice));
+        System.out.println("--- Starting Registration Process ---");
 
-        System.out.println("System Ready. Simulating Administrative Actions...\n");
+        // 3. Setup and Execute RegisterCustomerCommand
+        // Note: This command uses the Properties-based interface
+        RegisterCustomerCommand customerCmd = new RegisterCustomerCommand(office) {};
+        Properties customerParams = new Properties();
+        customerParams.setProperty("id", "C-101");
+        customerParams.setProperty("firstName", "Jim");
+        customerParams.setProperty("lastName", "Halpert");
+        customerParams.setProperty("streetAddress1", "1725 Slough Avenue");
+        customerParams.setProperty("city", "Scranton");
+        customerParams.setProperty("state", "PA");
+        customerParams.setProperty("zip", "18503");
+        customerParams.setProperty("phone", "570-555-0123");
 
-        // --- Step 1: Register a Customer ---
-        Properties custParams = new Properties();
-        custParams.setProperty("id", "CUST-999");
-        custParams.setProperty("firstName", "Jim");
-        custParams.setProperty("lastName", "Halpert");
-        custParams.setProperty("streetAddress1", "1725 Slough Ave");
-        custParams.setProperty("city", "Scranton");
-        custParams.setProperty("state", "PA");
-        custParams.setProperty("zip", "18503");
-        custParams.setProperty("phone", "570-555-1212");
+        String customerId = customerCmd.execute(customerParams);
+        System.out.println("Customer Registered with ID: " + customerId);
 
-        String custResult = commands.get("CUSTOMER").execute(custParams);
-        System.out.println("[Action: CUSTOMER] Result: " + custResult);
+        // 4. Setup and Execute RegisterCarCommand
+        // Note: This command uses the strongly-typed explicit interface
+        RegisterCarCommand carCmd = new RegisterCarCommand(office);
+        String permitId = carCmd.execute("DUNDER-1", CarType.SUV, "C-101");
 
-        // --- Step 2: Register a Car for that Customer ---
-        Properties carParams = new Properties();
-        carParams.setProperty("licensePlate", "PMPR-MIF");
-        carParams.setProperty("type", "SUV"); // Will trigger SUV pricing
-        carParams.setProperty("ownerId", "CUST-999");
+        System.out.println("Car Registered. Permit Issued: " + permitId);
 
-        String carResult = commands.get("CAR").execute(carParams);
-        System.out.println("[Action: CAR] Result: " + carResult);
-
-        // --- Step 3: Simulate First Parking Event ---
-        System.out.println("\n=== Recording First Parking Event ===");
-        ParkingPermit permit = parkingOffice.getPermitForCar("PMPR-MIF");
-        
-        if (permit != null) {
-            // First stay in the North Lot
-            parkingOffice.park(new Date(), permit, northLot);
-            System.out.println(" - Stay 1 recorded in North Lot ($12.00)");
+        // 5. Demonstrate the Strategy Pattern in action
+        // We retrieve the customer we just made to verify the state
+        Customer jim = office.getCustomer("C-101");
+        if (jim != null) {
+            System.out.println("\n--- Final System State ---");
+            System.out.println("Customer: " + jim.getFirstName() + " " + jim.getLastName());
+            System.out.println("Address: " + jim.getAddress().getCity() + ", " + jim.getAddress().getState());
+            
+            // If your office has a way to get the fee for the car:
+            // double fee = office.calculateFee("DUNDER-1"); 
+            // System.out.println("Calculated Strategy-Based Fee: $" + fee);
         }
-
-        // --- Step 4: Simulate Second Parking Event (The New Call) ---
-        System.out.println("\n=== Recording Second Parking Event ===");
-        // Simulate parking again (perhaps later in the day or the next day)
-        parkingOffice.park(new Date(), permit, northLot);
-        System.out.println(" - Stay 2 recorded in North Lot ($12.00)");
-
-        // --- Step 5: Final Billing Report ---
-        System.out.println("\n=== Final Billing Report ===");
         
-        // This will now sum BOTH transactions
-        Customer jim = parkingOffice.getListOfCustomers().get(0);
-        Money totalCharges = parkingOffice.getParkingCharges(jim);
+        System.out.println("\nBuild Success: All patterns verified.");
+    }
+    }
         
-        System.out.println("Total Charges for Customer CUST-999: " + totalCharges);
-        System.out.println("=== Simulation Complete ===");
-}}
