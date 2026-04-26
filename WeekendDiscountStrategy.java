@@ -4,34 +4,43 @@
  * Author: Gabriel Twizerimana
  */
 
-package edu.university.parking.assignment3.strategies;
+package edu.du.ict4315.parking3.strategies;
 
-import edu.university.parking.assignment1.domain.model.classes.ParkingPermit;
-import edu.university.parking.assignment1.domain.model.classes.CarType;
-import edu.university.parking.assignment1.domain.model.classes.Money;
+import edu.du.ict4315.parking1.controller.commands.ParkingPermit;
+import edu.du.ict4315.parking1.domain.model.classes.CarType;
+import edu.du.ict4315.parking1.domain.model.classes.Money;
 import java.time.DayOfWeek;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
+/**
+ * A concrete strategy that applies a 50% discount on weekends.
+ * This demonstrates a "Decorator-like" logic within the Strategy pattern.
+ */
 public class WeekendDiscountStrategy implements ParkingChargeStrategy {
+    /**
+     * Calculates the fee by applying a weekend discount to standard rates.
+     * 
+     * @param permit The permit providing vehicle details.
+     * @return A Money object with the discounted (or standard) amount.
+     */
     @Override
-    public Money calculateCharge(Money baseRate, LocalDateTime dateTime, ParkingPermit permit) {
-        double multiplier = 1.0;
+    public Money calculateFee(ParkingPermit permit) {
+        CarType type = permit.getCar().getType();
+        
+        // Base Weekday Rates
+        double amount = switch (type) {
+            case COMPACT -> 10.00;
+            case SUV -> 15.00;
+            case TRUCK -> 20.00;
+            default -> 12.00;
+        };
 
-        // Factor 1: Vehicle Type (10% "Eco" discount for Compact cars)
-        if (permit.getCar().getType() == CarType.COMPACT) {
-            multiplier -= 0.1;
-        }
-
-        // Factor 2: Day of Week (50% Flat Weekend Discount)
-        DayOfWeek day = dateTime.getDayOfWeek();
+        // Apply 50% discount if it's the weekend
+        DayOfWeek day = LocalDate.now().getDayOfWeek();
         if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
-            multiplier -= 0.5;
+            amount = amount * 0.5;
         }
 
-        // Ensure multiplier doesn't drop to zero or negative (sanity check)
-        multiplier = Math.max(0.1, multiplier);
-
-        long finalCents = Math.round(baseRate.getAmountInCents() * multiplier);
-        return new Money(finalCents, baseRate.getCurrency());
+        return new Money(amount, "USD");
     }
 }

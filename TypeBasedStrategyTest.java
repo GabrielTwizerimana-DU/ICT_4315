@@ -4,99 +4,89 @@
  * Author: Gabriel Twizerimana
  */
 
-package edu.university.parking.assignment3.strategies.test;
+package edu.du.ict4315.parking3.strategies.test;
 
-import edu.university.parking.assignment1.domain.model.classes.Car;
-import edu.university.parking.assignment1.domain.model.classes.CarType;
-import edu.university.parking.assignment1.controller.commands.Customer;
-import edu.university.parking.assignment1.domain.model.classes.ParkingPermit;
-import edu.university.parking.assignment1.domain.model.classes.Money;
-import edu.university.parking.assignment3.strategies.TypeBasedStrategy;
+import edu.du.ict4315.parking1.domain.model.classes.Car;
+import edu.du.ict4315.parking1.domain.model.classes.CarType;
+import edu.du.ict4315.parking1.domain.model.classes.Customer;
+import edu.du.ict4315.parking1.controller.commands.ParkingPermit;
+import edu.du.ict4315.parking1.domain.model.classes.Address;
+import edu.du.ict4315.parking1.domain.model.classes.Money;
+import edu.du.ict4315.parking3.strategies.TypeBasedStrategy;
 import java.time.LocalDateTime;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- *
- * @author gabby
+ * Tests the TypeBasedStrategy implementation.
+ * Verifies that different CarTypes result in the correct fee amounts
+ * as defined in the strategy's switch logic.
  */
 public class TypeBasedStrategyTest {
-    
-    public TypeBasedStrategyTest() {
-    }
-    
-    @BeforeAll
-    public static void setUpClass() {
-    }
-    
-    @AfterAll
-    public static void tearDownClass() {
-    }
-    
-  
-    
-    @AfterEach
-    public void tearDown() {
-    }
-
-    /**
-     * Test of calculateCharge method, of class TypeBasedStrategy.
-     */
-   private TypeBasedStrategy strategy;
-    private Money baseRate;
-    private LocalDateTime testTime;
+ private TypeBasedStrategy strategy;
+    private Customer testCustomer;
 
     @BeforeEach
     public void setUp() {
         strategy = new TypeBasedStrategy();
-        // INITIALIZE baseRate here to prevent the NullPointerException
-        baseRate = new Money(1000, "USD"); // $10.00
-        testTime = LocalDateTime.of(2026, 4, 17, 10, 0); // Friday morning
+        Address address = new Address("2199 S University Blvd", "Denver", "CO", "80208");
+        testCustomer = new Customer("C1", "Gaby", address);
     }
 
     @Test
-    public void testCalculateChargeForSUV() {
-        Customer owner = new Customer("C-1", "Jim", "Scranton", "555-1212");
-        Car suv = new Car("SUV-123", CarType.SUV, owner);
-        ParkingPermit permit = new ParkingPermit("P-SUV", suv);
+    public void testCalculateFeeForCompact() {
+        // Setup: Compact Car
+        Car compactCar = new Car("ABC-123", CarType.COMPACT, testCustomer);
+        ParkingPermit permit = new ParkingPermit("P-COMP", compactCar, LocalDateTime.now().minusDays(1));
 
-        // Act
-        Money result = strategy.calculateCharge(baseRate, testTime, permit);
+        // Execute
+        Money fee = strategy.calculateFee(permit);
 
-        // Assert: Assuming SUV has a 1.2x multiplier ($10.00 -> $12.00)
-        assertNotNull(result, "Resulting money object should not be null");
-        assertEquals(1200, result.getAmountInCents(), "SUV should be charged at 1.2x base rate.");
+        // Verify: Compact should be 10.00
+        assertNotNull(fee, "Fee should not be null.");
+        assertEquals(10.00, fee.getAmount(), 0.001, "Compact fee should be 10.00");
+        assertEquals("USD", fee.getCurrency());
     }
 
     @Test
-    public void testCalculateChargeForCompact() {
-        Customer owner = new Customer("C-2", "Dwight", "Beet Farm", "555-0000");
-        Car compact = new Car("MINI-01", CarType.COMPACT, owner);
-        ParkingPermit permit = new ParkingPermit("P-MINI", compact);
+    public void testCalculateFeeForSUV() {
+        // Setup: SUV Car
+        Car suvCar = new Car("SUV-999", CarType.SUV, testCustomer);
+        ParkingPermit permit = new ParkingPermit("P-SUV", suvCar, LocalDateTime.now().minusDays(1));
 
-        // Act
-        Money result = strategy.calculateCharge(baseRate, testTime, permit);
+        // Execute
+        Money fee = strategy.calculateFee(permit);
 
-        // Assert: Assuming Compact has a 0.8x or 1.0x multiplier
-        // If 1.0x, cents should be 1000
-        assertEquals(1000, result.getAmountInCents(), "Compact should be charged at base rate.");
+        // Verify: SUV should be 15.00
+        assertEquals(15.00, fee.getAmount(), 0.001, "SUV fee should be 15.00");
     }
 
     @Test
-public void testNullBaseRateThrowsException() {
-    // Verification of defensive programming
-    Customer owner = new Customer("C-1", "Jim", "Scranton", "555-1212");
-    Car suv = new Car("SUV-123", CarType.SUV, owner);
-    ParkingPermit permit = new ParkingPermit("P-SUV", suv);
+    public void testCalculateFeeForTruck() {
+        // Setup: Truck Car
+        Car truckCar = new Car("TRK-777", CarType.TRUCK, testCustomer);
+        ParkingPermit permit = new ParkingPermit("P-TRK", truckCar, LocalDateTime.now().minusDays(1));
 
-    // Simplified: No need to store the exception in a variable unless checking the message
-    assertThrows(IllegalArgumentException.class, () -> {
-        strategy.calculateCharge(null, testTime, permit);
-    }, "Strategy should throw an exception if baseRate is null.");
-}
+        // Execute
+        Money fee = strategy.calculateFee(permit);
+
+        // Verify: Truck should be 20.00
+        assertEquals(20.00, fee.getAmount(), 0.001, "Truck fee should be 20.00");
+    }
+
+    @Test
+    public void testCalculateFeeForDefault() {
+        // Setup: A car type not explicitly handled in a specific way if applicable
+        // (Assuming VAN or similar might hit the 'default' case)
+        Car vanCar = new Car("VAN-444", CarType.VAN, testCustomer);
+        ParkingPermit permit = new ParkingPermit("P-VAN", vanCar, LocalDateTime.now().minusDays(1));
+
+        // Execute
+        Money fee = strategy.calculateFee(permit);
+
+        // Verify: Default should be 12.00
+        assertEquals(12.00, fee.getAmount(), 0.001, "Default/Unknown type fee should be 12.00");
+    }
     
 }

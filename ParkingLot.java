@@ -4,66 +4,61 @@
  * Author: Gabriel Twizerimana
  */
 
-package edu.university.parking.assignment1.controller.commands;
+package edu.du.ict4315.parking1.controller.commands;
 
-import edu.university.parking.assignment1.domain.model.classes.ParkingPermit;
-import edu.university.parking.assignment1.domain.model.classes.Money;
-import edu.university.parking.assignment3.strategies.ParkingChargeStrategy;
-import java.time.LocalDateTime;
-
-// The ParkingLot no longer calculates money. It simply holds a reference to a strategy.
+/**
+ * Represents a parking lot that holds a reference to a specific 
+ * charging strategy identifier used by the Factory.
+ */
 public class ParkingLot {
 
-   private final String name;
-    private final Money baseRate;
-    private ParkingChargeStrategy strategy; // The "Strategy" reference
+    private String lotId;
+    private String address;
+    private String strategyType; // Key used by the Strategy Factory
 
     /**
-     * Constructor for Release 2.
-     * Note: This replaces the 'UnsupportedOperationException' stub.
-     * @param name
-     * @param baseRate
-     * @param strategy
+     * @param lotId Unique identifier for the lot.
+     * @param strategyType The name of the strategy (e.g., "WEEKDAY_PRIME")
      */
-    public ParkingLot(String name, Money baseRate, ParkingChargeStrategy strategy) {
-        this.name = name;
-        this.baseRate = baseRate;
-        this.strategy = strategy;
+    public ParkingLot(String lotId, String strategyType) {
+        this.lotId = lotId;
+        this.strategyType = strategyType;
+    }
+
+    // FIX: Must be public so tests and TransactionManager can access it
+    public String getLotId() {
+        return lotId;
+    }
+
+    public void setLotId(String lotId) {
+        this.lotId = lotId;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
     }
 
     /**
-     * The core logic for the Strategy Pattern.
-     * Delegates the actual calculation to the current strategy object.
-     * @param dateTime
-     * @param permit
-     * @return 
+     * This is the "hook" for the Factory Pattern.
+     * @return The string name of the strategy to be used.
      */
-    public Money getCharge(LocalDateTime dateTime, ParkingPermit permit) {
-        if (strategy == null) {
-            return baseRate; // Fallback if no strategy is set
-        }
-        return strategy.calculateCharge(baseRate, dateTime, permit);
+    public String getStrategyType() {
+        return strategyType;
     }
 
-    /**
-     * Requirement: Ability to change strategies at runtime.
-     * This allows a lot to switch from 'Weekday' to 'Special Event' pricing.
-     * @param strategy
-     */
-    public void setStrategy(ParkingChargeStrategy strategy) {
-        this.strategy = strategy;
+    public void setStrategyType(String strategyType) {
+        this.strategyType = strategyType;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public Money getBaseRate() {
-        return baseRate;
-    }
-
-    public ParkingChargeStrategy getStrategy() {
-        return strategy;
+    @Override
+    public String toString() {
+        return "ParkingLot{" +
+                "lotId='" + lotId + '\'' +
+                ", strategyType='" + strategyType + '\'' +
+                '}';
     }
 }
-    

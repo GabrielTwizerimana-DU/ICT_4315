@@ -2,64 +2,64 @@
  * File: TransactionManager.java
  * Author: Gabriel Twizerimana
  */
-package edu.university.parking.assignment1.management.layers;
+package edu.du.ict4315.parking4.charges.factory;
 
-import edu.university.parking.assignment1.controller.commands.ParkingLot;
-import edu.university.parking.assignment1.domain.model.classes.ParkingPermit;
-import edu.university.parking.assignment1.controller.commands.ParkingTransaction;
-import edu.university.parking.assignment1.domain.model.classes.Money;
-import edu.university.parking.assignment1.controller.commands.Customer;
+import edu.du.ict4315.parking1.controller.commands.ParkingPermit;
+import edu.du.ict4315.parking1.controller.commands.ParkingTransaction;
+import edu.du.ict4315.parking1.domain.model.classes.Money;
+import edu.du.ict4315.parking3.strategies.ParkingChargeStrategy;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
+/**
+ * Manages parking transactions by coordinating with the Strategy Factory.
+ * Resolves the "Incompatible Types" error by ensuring the lot is treated as a
+ * String and the Factory is used to retrieve the pricing logic.
+ */
 public class TransactionManager {
+
     private final List<ParkingTransaction> transactions;
+    private final ParkingChargeStrategyFactory strategyFactory;
 
     public TransactionManager() {
         this.transactions = new ArrayList<>();
+        // Initializing the factory ensures it is available for use in park()
+        this.strategyFactory = new ParkingChargeStrategyFactory();
     }
 
     /**
-     * Requirement: Record a parking event.
-     * The fee is passed in as a Money object, having already been 
-     * calculated by the ParkingLot's Strategy.
-     * @param date
-     * @param permit
-     * @param lot
-     * @param fee
-     * @return 
+     * Records a new parking event.
+     *
+     * @param permit The ParkingPermit object.
+     * @param parkingLot The name of the lot (passed as a String).
+     * @param strategyName The pricing strategy identifier (e.g., "WEEKDAY").
+     * @return The created ParkingTransaction.
      */
-    public ParkingTransaction park(LocalDateTime date, ParkingPermit permit, ParkingLot lot, Money fee) {
-        // 1. Create the immutable transaction record
-        ParkingTransaction transaction = new ParkingTransaction(date, permit, lot, fee);
-        
-        // 2. Store it in the internal ledger
+    public ParkingTransaction park(ParkingPermit permit, String parkingLot, String strategyName) {
+
+        // 1. USE the factory (resolves "never read" warning)
+        // Converts the String "WEEKDAY" into a Strategy object
+        ParkingChargeStrategy strategy = strategyFactory.getStrategy(strategyName);
+
+        // 2. Calculate the fee using the strategy
+        Money fee = strategy.calculateFee(permit);
+
+        // 3. Create the transaction record
+        // CRITICAL: Ensure the order matches your ParkingTransaction constructor!
+        // Order: (Date, String, Permit, Money)
+        ParkingTransaction transaction = new ParkingTransaction(
+                LocalDateTime.now(),
+                parkingLot,
+                permit,
+                fee
+        );
+
+        // 4. Store and return the result
         transactions.add(transaction);
-        
         return transaction;
     }
 
-   public List<ParkingTransaction> getTransactions(Customer customer) {
-    List<ParkingTransaction> filteredTransactions = new ArrayList<>();
-
-    for (ParkingTransaction transaction : this.transactions) {
-        // Navigate the object graph to get the owner
-        Customer owner = transaction.getPermit().getCar().getOwner();
-        
-        // Use .equals() which compares IDs, not memory addresses
-        if (owner.equals(customer)) {
-            filteredTransactions.add(transaction);
-        }
-    }
-
-    return filteredTransactions;
-}
-
-    /**
-     * Overloaded version: Returns all transactions in the system.
-     * Used in testParkRecordsTransaction.
-     * @return 
-     */
     public List<ParkingTransaction> getTransactions() {
         return new ArrayList<>(transactions);
     }

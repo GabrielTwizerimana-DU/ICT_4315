@@ -1,40 +1,43 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+
+/**
+ * File: TypeBasedStrategy.java
+ * Author: Gabriel Twizerimana
  */
-package edu.university.parking.assignment3.strategies;
 
-import edu.university.parking.assignment1.domain.model.classes.ParkingPermit;
-import edu.university.parking.assignment1.domain.model.classes.CarType;
-import edu.university.parking.assignment1.domain.model.classes.Money;
-import java.time.LocalDateTime;
+package edu.du.ict4315.parking3.strategies;
+
+import edu.du.ict4315.parking1.controller.commands.ParkingPermit;
+import edu.du.ict4315.parking1.domain.model.classes.CarType;
+import edu.du.ict4315.parking1.domain.model.classes.Money;
 
 
- // This implements your original rule: 20% discount for COMPACT cars, standard rate for others.
+ /**
+ * A concrete strategy that calculates parking fees based on the type of car.
+ * This is a "Concrete Product" in the Factory Pattern.
+ */
 public class TypeBasedStrategy implements ParkingChargeStrategy {
-
+/**
+     * Calculates the fee by navigating the object graph: 
+     * Permit -> Car -> CarType.
+     * 
+     * @param permit The permit providing access to vehicle details.
+     * @return A Money object with the calculated amount.
+     */
     @Override
-    public Money calculateCharge(Money baseRate, LocalDateTime dateTime, ParkingPermit permit) {
-        // 1. Fix the NullPointerException (Test #3)
-        if (baseRate == null) {
-            throw new IllegalArgumentException("baseRate cannot be null");
-        }
-
-        long baseCents = baseRate.getAmountInCents();
-        double multiplier = 1.0; // Default
-
-        // 2. Align multipliers with your Test Expectations (Tests #1 & #2)
-        CarType type = permit.getVehicleType();
+    public Money calculateFee(ParkingPermit permit) {
+        // Navigate the object graph to find the car type
+        CarType type = permit.getCar().getType();
         
-        if (null != type) switch (type) {
-            case SUV -> multiplier = 1.2; // Match the expected 1200
-            case COMPACT -> multiplier = 1.0; // Match the expected 1000
-            case TRUCK -> multiplier = 1.5; // Example for other types
-            default -> {
-            }
-        }
+        double amount;
 
-        long finalAmount = (long) (baseCents * multiplier);
-        return new Money(finalAmount, baseRate.getCurrency());
+        // Logic based on the CarType enum
+        amount = switch (type) {
+            case COMPACT -> 10.00;
+            case SUV -> 15.00;
+            case TRUCK -> 20.00;
+            default -> 12.00;
+        }; // Default flat rate
+
+        return new Money(amount, "USD");
     }
 }

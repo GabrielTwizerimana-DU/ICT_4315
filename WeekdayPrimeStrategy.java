@@ -4,36 +4,36 @@
  * Author: Gabriel Twizerimana
  */
 
-package edu.university.parking.assignment3.strategies;
+package edu.du.ict4315.parking3.strategies;
 
-import edu.university.parking.assignment1.domain.model.classes.ParkingPermit;
-import edu.university.parking.assignment1.domain.model.classes.CarType;
-import edu.university.parking.assignment1.domain.model.classes.Money;
-import java.time.DayOfWeek;
-import java.time.LocalDateTime;
+import edu.du.ict4315.parking1.controller.commands.ParkingPermit;
+import edu.du.ict4315.parking1.domain.model.classes.CarType;
+import edu.du.ict4315.parking1.domain.model.classes.Money;
 
+/**
+ * A concrete strategy for "Prime" weekday parking.
+ * Demonstrates the flexibility of the Factory Pattern by allowing 
+ * different pricing rules for the same CarType.
+ */
 public class WeekdayPrimeStrategy implements ParkingChargeStrategy {
+    /**
+     * Calculates the fee using "Prime" rates.
+     * 
+     * @param permit The permit providing vehicle details.
+     * @return A Money object with the premium calculated amount.
+     */
     @Override
-    public Money calculateCharge(Money baseRate, LocalDateTime dateTime, ParkingPermit permit) {
-        double multiplier = 1.0;
-
-        // Factor 1: Vehicle Type (20% SUV Surcharge)
-        if (permit.getCar().getType() == CarType.SUV) {
-            multiplier += 0.2;
-        }
-
-        // Factor 2: Time of Day (50% Prime Time Surcharge: Mon-Fri, 8am - 5pm)
-        DayOfWeek day = dateTime.getDayOfWeek();
-        int hour = dateTime.getHour();
+    public Money calculateFee(ParkingPermit permit) {
+        CarType type = permit.getCar().getType();
         
-        boolean isWeekday = (day != DayOfWeek.SATURDAY && day != DayOfWeek.SUNDAY);
-        boolean isPrimeTime = (hour >= 8 && hour < 17);
+        // Prime rates are higher than standard TypeBased rates
+        double amount = switch (type) {
+            case COMPACT -> 15.00;
+            case SUV -> 25.00;
+            case TRUCK -> 35.00;
+            default -> 20.00;
+        };
 
-        if (isWeekday && isPrimeTime) {
-            multiplier += 0.5;
-        }
-
-        long finalCents = Math.round(baseRate.getAmountInCents() * multiplier);
-        return new Money(finalCents, baseRate.getCurrency());
+        return new Money(amount, "USD");
     }
 }
