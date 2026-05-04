@@ -6,45 +6,44 @@
 
 package edu.du.ict4315.parking3.strategies;
 
-import edu.du.ict4315.parking1.controller.commands.ParkingPermit;
-import edu.du.ict4315.parking1.domain.model.classes.CarType;
+import edu.du.ict4315.parking1.controller.commands.ParkingTransaction;
 import edu.du.ict4315.parking1.domain.model.classes.Money;
 import java.time.DayOfWeek;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
- * A concrete strategy that applies different rates based on 
- * whether it is a weekday or a weekend.
+ * Strategy that applies different flat rates based on whether the
+ * parking event started on a weekday or a weekend.
  */
-public class WeekdayWeekendStrategy implements ParkingChargeStrategy{
-/**
-     * Calculates the fee based on the current day of the week.
-     * Weekend (Sat/Sun) usually has a flat discount or specific rate.
-     * 
-     * @param permit The permit providing vehicle details.
-     * @return A Money object with the calculated amount.
+public class WeekdayWeekendStrategy implements ParkingChargeStrategy {
+
+    private static final double WEEKDAY_RATE = 20.0;
+    private static final double WEEKEND_RATE = 10.0;
+
+    /**
+     * Calculates the fee by checking the DayOfWeek of the entry time.
+     * @param transaction The expert object containing stay details.
+     * @return A Money object representing the calculated fee.
      */
     @Override
-    public Money calculateFee(ParkingPermit permit) {
-        // Get the current day of the week
-        DayOfWeek day = LocalDate.now().getDayOfWeek();
-        
-        boolean isWeekend = (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY);
-        double amount;
-
-        if (isWeekend) {
-            // Flat weekend rate regardless of CarType
-            amount = 5.00; 
-        } else {
-            // Standard weekday rates based on CarType
-            CarType type = permit.getCar().getType();
-            amount = switch (type) {
-                case COMPACT -> 10.00;
-                case SUV -> 15.00;
-                default -> 12.00;
-            };
+    public Money calculateFee(ParkingTransaction transaction) {
+        if (transaction == null || transaction.getEntryTime() == null) {
+            return new Money(0.0);
         }
 
-        return new Money(amount, "USD");
+        // Information Expert: Transaction provides the 'when'
+        LocalDateTime entryTime = transaction.getEntryTime();
+        DayOfWeek day = entryTime.getDayOfWeek();
+
+        double amount;
+
+        // Check for weekend days
+        if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
+            amount = WEEKEND_RATE;
+        } else {
+            amount = WEEKDAY_RATE;
+        }
+
+        return new Money(amount);
     }
 }

@@ -6,22 +6,21 @@
 
 package edu.du.ict4315.parking3.strategies;
 
-import edu.du.ict4315.parking1.controller.commands.ParkingPermit;
+import edu.du.ict4315.parking1.controller.commands.ParkingTransaction;
 import edu.du.ict4315.parking1.domain.model.classes.Money;
 
 /**
- * The Strategy interface for calculating parking fees.
- * This is the "Product" interface in the Factory Pattern.
+ * Strategy interface for calculating parking fees
+ * This adheres to the Strategy Pattern, allowing different 
+ * calculation algorithms to be swapped at runtime
  */
 public interface ParkingChargeStrategy {
-    
-    
+
     /**
-     * Calculates the parking fee for a specific permit.
-     * 
-     * @param permit The permit associated with the vehicle.
-     * @return A Money object representing the calculated cost.
+     * Calculates the parking fee for a completed transaction.
+     * * @param transaction The expert object containing permit, lot, and time data.
+     * @param transaction
+     * @return A Money object representing the total charge.
      */
-    Money calculateFee(ParkingPermit permit);
-    
+    Money calculateFee(ParkingTransaction transaction);
 }

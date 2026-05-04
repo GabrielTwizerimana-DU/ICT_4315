@@ -4,61 +4,60 @@
  * Author: Gabriel Twizerimana
  */
 
-package edu.university.parking.assignment1.controller.commands.test;
+package edu.du.ict4315.parking1.controller.commands.test;
 
-import edu.university.parking.assignment1.controller.commands.Command;
-import java.util.Properties;
+import edu.du.ict4315.parking1.controller.commands.Command;
+import java.util.HashMap;
+import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 
 /**
- * unit tests for the Command interface contract.
- * Ensures that the Command Pattern structure is sound.
+ * Contract test for the Command interface.
+ * Ensures that any implementation follows the Map-based execution pattern
+ * required for the Factory and Strategy architecture.
  */
 public class CommandTest {
 
-    @Test
-    public void testCommandContract() {
-        // Create a temporary implementation to test the interface structure
-        Command mockCommand = new Command() {
-            @Override
-            public String getCommandName() {
-                return "TEST_CMD";
+   /**
+     * A Dummy implementation of Command to test the interface contract.
+     */
+    private static class DummyCommand implements Command {
+        @Override
+        public String execute(Map<String, String> parameters) {
+            if (parameters.containsKey("triggerError")) {
+                return "Error occurred";
             }
-
-            public String getDisplayName() {
-                return "Test Command";
-            }
-
-            @Override
-            public String execute(Properties params) {
-                return "Success:" + params.getProperty("input");
-            }
-        };
-
-        // 1. Verify the Name (Used as the Key in the ParkingService HashMap)
-        assertEquals("TEST_CMD", mockCommand.getCommandName());
-
-        // 2. Verify Execution Logic with Properties
-        Properties testProps = new Properties();
-        testProps.setProperty("input", "Value123");
-        
-        String result = mockCommand.execute(testProps);
-        assertEquals("Success:Value123", result, "The command failed to process input properties.");
+            return "Success: " + parameters.get("data");
+        }
     }
 
     @Test
-    public void testCommandWithEmptyProperties() {
-        Command simpleCommand = new Command() {
-            @Override public String getCommandName() { return "EMPTY"; }
-            public String getDisplayName() { return "Empty Test"; }
-            @Override public String execute(Properties params) {
-                return (params != null) ? "ObjectExists" : "Null";
-            }
-        };
+    public void testCommandInterfaceContract() {
+        Command command = new DummyCommand();
+        Map<String, String> params = new HashMap<>();
+        params.put("data", "JUnit Test");
 
-        // Ensure the interface can handle being passed a fresh Properties object
-        assertEquals("ObjectExists", simpleCommand.execute(new Properties()));
+        String result = command.execute(params);
+
+        // Verify the interface returns a String as expected
+        assertNotNull(result);
+        assertTrue(result.contains("Success"));
+        assertTrue(result.contains("JUnit Test"));
+    }
+
+    @Test
+    public void testCommandErrorHandlingContract() {
+        Command command = new DummyCommand();
+        Map<String, String> params = new HashMap<>();
+        params.put("triggerError", "true");
+
+        String result = command.execute(params);
+
+        // Verify the interface can communicate failure via the return String
+        assertEquals("Error occurred", result);
     }
 }

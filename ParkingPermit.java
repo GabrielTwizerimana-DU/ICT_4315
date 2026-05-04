@@ -3,57 +3,48 @@
  * File: ParkingPermit.java
  * Author: Gabriel Twizerimana
  */
-package edu.university.parking.assignment1.domain.model.classes;
+package edu.du.ict4315.parking1.controller.commands;
 
-import java.util.UUID;
+import edu.du.ict4315.parking1.domain.model.classes.Car;
 
 /**
- *
- * Links a specific Car to an ID and an expiration date.
+ * Represents a parking permit issued to a specific car.
+ * This object is passed to the TransactionManager to record parking events.
  */
-
 public class ParkingPermit {
-
-    private final String id;
+private final String id;
     private final Car car;
+    
 
+    /**
+     * @param id The unique identifier for the permit (e.g., "P1").
+     * @param car The Car object associated with this permit.
+     */
     public ParkingPermit(String id, Car car) {
         this.id = id;
         this.car = car;
     }
+    
 
     /**
-     * Helper constructor to generate a unique ID automatically 
-     * if one isn't provided by the registrar.
-     * @param car
+     * Returns the unique permit identifier.
+     * @return String id
      */
-    public ParkingPermit(Car car) {
-        this(UUID.randomUUID().toString().substring(0, 8), car);
-    }
-
     public String getId() {
         return id;
     }
 
+    /**
+     * Returns the vehicle associated with this permit.
+     * Required by the TransactionManager to resolve the ParkingChargeStrategy via CarType.
+     * @return Car object
+     */
     public Car getCar() {
         return car;
-    }
-    
-   
-
-    /**
-     * Convenience method for the Strategy Pattern.
-     * Allows algorithms to easily check the vehicle type.
-     * @return 
-     */
-    public CarType getVehicleType() {
-        return car.getType();
     }
 
     @Override
     public String toString() {
-        return "Permit ID: " + id + " [" + car.getLicensePlate() + "]";
+        return String.format("Permit[ID: %s, Vehicle: %s]", id, car.getLicensePlate());
     }
-
-   
 }

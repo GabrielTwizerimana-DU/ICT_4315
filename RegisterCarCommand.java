@@ -1,78 +1,78 @@
-
 /**
  * File: RegisterCarCommand.java
  * Author: Gabriel Twizerimana
  */
-package edu.university.parking.assignment1.controller.commands;
-import edu.university.parking.assignment1.domain.model.classes.Car;
-import edu.university.parking.assignment1.domain.model.classes.CarType;
-import java.util.Properties;
+package edu.du.ict4315.parking1.controller.commands;
+
+import edu.du.ict4315.parking1.domain.model.classes.Car;
+import edu.du.ict4315.parking1.domain.model.classes.CarType;
+import edu.du.ict4315.parking1.domain.model.classes.Customer;
+import java.util.Map;
 
 /**
- * Concrete command to handle car registration.
- * Extracts car details from properties and interacts with the ParkingOffice.
+ * Concrete Command to register a car. This ensures the domain objects required
+ * by the Factory (like CarType and Customer) are correctly linked.
  */
-
 public class RegisterCarCommand implements Command {
 
     private final ParkingOffice office;
+    private final String customerId;
+    private final String licensePlate;
+    private final CarType carType;
+  
 
-    /**
-     * Constructor accepts the ParkingOffice to perform the registration.
-     *
-     * @param office
-     */
-    public RegisterCarCommand(ParkingOffice office) {
+    public RegisterCarCommand(ParkingOffice office, String customerId, String licensePlate, CarType carType) {
         this.office = office;
-    }
-    public String register(Car car) {
-    // 1. Generate the Permit ID string
-    String permitId = "PERMIT-" + car.getLicensePlate();
-    
-    // 2. Add the car to the office's data structures 
-    // (Ensure you have a way to store these, like a List<Car> or Map)
-    // this.cars.add(car); 
-
-    // 3. RETURN the permitId so the Command can return it to the Test
-    return permitId; 
-}
-
-    @Override
-    public String getCommandName() {
-        return "CAR";
+        this.customerId = customerId;
+        this.licensePlate = licensePlate;
+        this.carType = carType;
     }
 
-    public String getDisplayName() {
-        return "Register Car";
+    public ParkingOffice getOffice() {
+        return office;
+    }
+
+    public String getCustomerId() {
+        return customerId;
+    }
+
+    public String getLicensePlate() {
+        return licensePlate;
+    }
+
+    public CarType getCarType() {
+        return carType;
     }
 
     /**
-     * Executes the registration logic. Expected properties: licensePlate, type,
-     * ownerId
+     * Overrides the Command interface method. Note: Even if 'data' isn't used
+     * here, the signature must match.
      *
-     * @param licensePlate
-     * @param type
-     * @param customerId
-     * @param params
+     * @param data
      * @return
      */
-  public String execute(String licensePlate, CarType type, String customerId) {
-    // 1. Get the customer from the office
-    Customer customer = office.getCustomer(customerId);
-    
-    // 2. Safety check for the testRegistrationWithInvalidCustomer test
-    if (customer == null) {
-        return null;
-    }
-
-    // 3. Register and return the permit ID
-    return office.register(customer, licensePlate, type);
-}
-
     @Override
-    public String execute(Properties params) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    public String execute(Map<String, String> data) {
+        // 1. Retrieve the customer from the office
+        Customer customer = office.getCustomer(customerId);
+        if (customer == null) {
+            return "Error: Customer " + customerId + " not found.";
+        }
+
+        // 2. Create the domain objects
+        Car car = new Car(licensePlate, carType, customer);
+
+        // Ensure your office has a method to generate IDs or use a UUID
+        String permitId = "P-" + licensePlate;
+        ParkingPermit permit = new ParkingPermit(permitId, car);
+
+        // 3. Link objects
+        customer.addPermit(permit);
+
+        // Ensure your ParkingOffice has a registerPermit method
+        office.registerPermit(permit);
+
+        return String.format("Success: Car %s registered for %s. Permit: %s",
+                licensePlate, customer.getName(), permitId);
     }
-    
-    
 }

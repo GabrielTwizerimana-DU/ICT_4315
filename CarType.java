@@ -4,14 +4,22 @@
  * Author: Gabriel Twizerimana
  */
 
-package edu.university.parking.assignment1.domain.model.classes;
+package edu.du.ict4315.parking1.domain.model.classes;
 
-public enum CarType {
-  
 /**
- * In a parking context, a truck usually represents a "special case."
- * Trucks are larger, heavier, and often take up more than one space or require reinforced pavement
-*/
+ * Defines the categories of vehicles supported by the parking system.
+ * The Strategy Factory uses these types to determine specific fee structures.
+ */
+public enum CarType {
+    /** Standard rate vehicle */
+    COMPACT,
     
-    COMPACT, SUV, TRUCK 
+    /** Premium rate vehicle */
+    SUV,
+    
+    /** Large vehicle rate */
+    TRUCK,
+    
+    /** Specialized or commercial rate */
+    VAN
 }

@@ -6,38 +6,39 @@
 
 package edu.du.ict4315.parking3.strategies;
 
-import edu.du.ict4315.parking1.controller.commands.ParkingPermit;
+import edu.du.ict4315.parking1.controller.commands.ParkingTransaction;
 import edu.du.ict4315.parking1.domain.model.classes.CarType;
 import edu.du.ict4315.parking1.domain.model.classes.Money;
 
 
- /**
- * A concrete strategy that calculates parking fees based on the type of car.
- * This is a "Concrete Product" in the Factory Pattern.
+/**
+ * Concrete implementation of ParkingChargeStrategy.
+ * This class acts as a strategy for calculating fees based on vehicle type.
  */
 public class TypeBasedStrategy implements ParkingChargeStrategy {
-/**
-     * Calculates the fee by navigating the object graph: 
-     * Permit -> Car -> CarType.
-     * 
-     * @param permit The permit providing access to vehicle details.
+
+    /**
+     * Calculates the fee using the transaction data.
+     * @param transaction The expert object containing all stay details.
      * @return A Money object with the calculated amount.
      */
     @Override
-    public Money calculateFee(ParkingPermit permit) {
-        // Navigate the object graph to find the car type
-        CarType type = permit.getCar().getType();
-        
+    public Money calculateFee(ParkingTransaction transaction) {
+        if (transaction == null || transaction.getPermit() == null) {
+            return new Money(0.0);
+        }
+
+        // Information Expert: Navigating the object graph to find the car type
+        CarType type = transaction.getPermit().getCar().getType();
         double amount;
 
         // Logic based on the CarType enum
-        amount = switch (type) {
-            case COMPACT -> 10.00;
-            case SUV -> 15.00;
-            case TRUCK -> 20.00;
-            default -> 12.00;
-        }; // Default flat rate
+        switch (type) {
+            case SUV -> amount = 20.0;
+            case COMPACT -> amount = 10.0;
+            default -> amount = 15.0;
+        }
 
-        return new Money(amount, "USD");
+        return new Money(amount);
     }
 }

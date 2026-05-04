@@ -1,64 +1,88 @@
-
 /**
  * File: ParkingLot.java
  * Author: Gabriel Twizerimana
  */
-
 package edu.du.ict4315.parking1.controller.commands;
 
+import edu.du.ict4315.parking5.observer.pattern.ParkingAction;
+import edu.du.ict4315.parking5.observer.pattern.ParkingEvent;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import edu.du.ict4315.parking5.observer.pattern.ParkingObserver;
+
 /**
- * Represents a parking lot that holds a reference to a specific 
- * charging strategy identifier used by the Factory.
+ * The Subject in the Observer pattern. Broadcasts entry and exit events to
+ * registered ParkingAction observers.
  */
 public class ParkingLot {
 
-    private String lotId;
-    private String address;
-    private String strategyType; // Key used by the Strategy Factory
+    private final String id;
+    private final String name;
+    private final int capacity;
+    private final List<ParkingObserver> observers = new ArrayList<>();
 
-    /**
-     * @param lotId Unique identifier for the lot.
-     * @param strategyType The name of the strategy (e.g., "WEEKDAY_PRIME")
-     */
-    public ParkingLot(String lotId, String strategyType) {
-        this.lotId = lotId;
-        this.strategyType = strategyType;
+    public ParkingLot(String id, String name, int capacity) {
+        this.id = id;
+        this.name = name;
+        this.capacity = capacity;
     }
 
-    // FIX: Must be public so tests and TransactionManager can access it
-    public String getLotId() {
-        return lotId;
+    public void addObserver(ParkingObserver observer) {
+        if (observer != null && !observers.contains(observer)) {
+            observers.add(observer);
+        }
     }
 
-    public void setLotId(String lotId) {
-        this.lotId = lotId;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
+    public void removeObserver(ParkingObserver observer) {
+        observers.remove(observer);
     }
 
     /**
-     * This is the "hook" for the Factory Pattern.
-     * @return The string name of the strategy to be used.
+     * Notifies all registered observers of a parking event.
+     *
+     * @param event
      */
-    public String getStrategyType() {
-        return strategyType;
+    public void notifyObservers(ParkingEvent event) {
+        for (ParkingObserver observer : observers) {
+            observer.update(event);
+        }
     }
 
-    public void setStrategyType(String strategyType) {
-        this.strategyType = strategyType;
+    public void enter(ParkingPermit permit) {
+        // Domain logic for entry...
+
+        // Create the event with (Lot, Permit, Action) to match the constructor
+        ParkingEvent event = new ParkingEvent(this, permit, ParkingAction.ENTER);
+        notifyObservers(event);
+    }
+
+    public void exit(ParkingPermit permit) {
+        // Domain logic for exit...
+
+        ParkingEvent event = new ParkingEvent(this, permit, ParkingAction.EXIT);
+        notifyObservers(event);
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getCapacity() {
+        return capacity;
+    }
+
+    public List<ParkingObserver> getObservers() {
+        return observers;
     }
 
     @Override
     public String toString() {
-        return "ParkingLot{" +
-                "lotId='" + lotId + '\'' +
-                ", strategyType='" + strategyType + '\'' +
-                '}';
+        return name + " (" + id + ")";
     }
+
 }

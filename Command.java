@@ -4,13 +4,11 @@
  * Author: Gabriel Twizerimana
  */
 
-package edu.university.parking.assignment1.controller.commands;
+package edu.du.ict4315.parking1.controller.commands;
 
-import java.util.Properties;
+import java.util.Map;
 
 public interface Command {
-
-    String getCommandName();
-
-    String execute(Properties params);
+// Ensure the method signature matches your classes exactly
+    String execute(Map<String, String> parameters);
 }

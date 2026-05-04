@@ -1,77 +1,74 @@
-
 /**
  * File: ParkingTransactionTest.java
  * Author: Gabriel Twizerimana
  */
+package edu.du.ict4315.parking1.controller.commands;
 
-package edu.university.parking.assignment1.controller.commands.test;
-
-import edu.university.parking.assignment1.controller.commands.Customer;
-import edu.university.parking.assignment1.controller.commands.ParkingLot;
-import edu.university.parking.assignment1.domain.model.classes.ParkingPermit;
-import edu.university.parking.assignment1.controller.commands.ParkingTransaction;
-import edu.university.parking.assignment1.domain.model.classes.Car;
-import edu.university.parking.assignment1.domain.model.classes.CarType;
-import edu.university.parking.assignment1.domain.model.classes.Money;
-import edu.university.parking.assignment3.strategies.WeekdayPrimeStrategy;
-import static org.junit.jupiter.api.Assertions.*;
+import edu.du.ict4315.parking1.domain.model.classes.Car;
+import edu.du.ict4315.parking1.domain.model.classes.CarType;
+import edu.du.ict4315.parking1.domain.model.classes.Customer;
+import edu.du.ict4315.parking1.domain.model.classes.Money;
+import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import java.time.LocalDateTime;
-
-
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for the ParkingTransaction class. Verifies that transaction
- * records accurately store permit, lot, and fee data.
+ * Unit tests for ParkingTransaction ensuring data integrity using real domain
+ * objects and the Money class
  */
-
 public class ParkingTransactionTest {
 
+    private ParkingTransaction transaction;
     private ParkingPermit permit;
     private ParkingLot lot;
-    private LocalDateTime testDate;
-    private Money baseRate;
+    private LocalDateTime entryTime;
 
     @BeforeEach
     public void setUp() {
-        // 1. Setup Domain Objects
-        Customer customer = new Customer("C-999", "John Doe", "123 Lane", "555-1234");
-        Car suv = new Car("TEST-PLATE", CarType.SUV, customer);
-        permit = new ParkingPermit("P-100", suv);
-        baseRate = new Money(1000, "USD"); // $10.00
-        
-        // 2. Setup a Lot with a specific Strategy
-        // We'll use the WeekdayPrimeStrategy which has an SUV surcharge
-        lot = new ParkingLot("North Lot", baseRate, new WeekdayPrimeStrategy());
-        
-        // 3. Set a specific date (Tuesday at 10:00 AM - Weekday Prime Time)
-        testDate = LocalDateTime.of(2026, 4, 14, 10, 0);
+        // Initialize real objects to satisfy dependencies
+        Customer customer = new Customer("C-123", "John Doe", "555 Main St");
+        Car car = new Car("GHY-456", CarType.SUV, customer);
+        permit = new ParkingPermit("P-202", car);
+        lot = new ParkingLot("L1", "South Lot", 100);
+        entryTime = LocalDateTime.now().minusHours(2);
+
+        // FIX: Constructor now requires (Permit, Lot, EntryTime)
+        // Resolves "actual and formal argument lists differ in length"
+        transaction = new ParkingTransaction(permit, lot, entryTime);
     }
 
     @Test
-    public void testTransactionStoresStrategyCalculatedAmount() {
-        // The "Park" action usually happens in the ParkingOffice or TransactionManager
-        // Here we test if the Transaction object correctly holds the Strategy's result
-        
-        // Strategy Math: $10 base + 20% SUV ($2) + 50% Prime ($5) = $17.00
-        Money calculatedFee = lot.getCharge(testDate, permit);
-        
-        ParkingTransaction tx = new ParkingTransaction(testDate, permit, lot, calculatedFee);
+    public void testInitialState() {
+        assertEquals(permit, transaction.getPermit());
+        assertEquals(lot, transaction.getLot());
+        assertEquals(entryTime, transaction.getEntryTime());
 
-        assertNotNull(tx, "Transaction should be successfully created.");
-        assertEquals(calculatedFee, tx.getChargedAmount(), "Transaction must store the fee provided by the strategy.");
-        assertEquals(1700, tx.getChargedAmount().getAmountInCents(), "The stored amount should reflect the SUV/Prime Time rules.");
+        // Verify Fee initializes as a Money object with 0 amount
+        assertNotNull(transaction.getFee());
+        assertEquals(0.0, transaction.getFee().getAmount());
     }
 
     @Test
-    public void testTransactionReferentialIntegrity() {
-        Money fee = new Money(500, "USD");
-        ParkingTransaction tx = new ParkingTransaction(testDate, permit, lot, fee);
+    public void testFinalizeTransaction() {
+        LocalDateTime exitTime = LocalDateTime.now();
+        Money calculatedFee = new Money(15.0);
 
-        // Ensure all components of the transaction are linked correctly
-        assertEquals(permit, tx.getPermit(), "Transaction should be linked to the correct permit.");
-        assertEquals(lot, tx.getParkingLot(), "Transaction should be linked to the correct lot.");
-        assertEquals(testDate, tx.getTransactionDate(), "Transaction should store the correct timestamp.");
+        // Act: Finalize the transaction
+        transaction.setExitTime(exitTime);
+        transaction.setFee(calculatedFee);
+
+        // Assert: Verify state changes
+        assertEquals(exitTime, transaction.getExitTime());
+        assertEquals(calculatedFee, transaction.getFee());
+        // FIX: Use getAmount() for numeric comparison
+        assertEquals(15.0, transaction.getFee().getAmount());
+    }
+
+    @Test
+    public void testDataTraceability() {
+        // Verify we can navigate the object graph through the transaction
+        assertEquals(CarType.SUV, transaction.getPermit().getCar().getType());
+        assertEquals("John Doe", transaction.getPermit().getCar().getOwner().getName());
     }
 }

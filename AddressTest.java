@@ -3,60 +3,54 @@
  * File: AddressTest.java
  * Author: Gabriel Twizerimana
  */
-package edu.university.parking.assignment1.domain.model.classes.test;
+package edu.du.ict4315.parking1.domain.model.classes.test;
 
-import edu.university.parking.assignment1.domain.model.classes.Address;
+import edu.du.ict4315.parking1.domain.model.classes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for the Address class. Verifies that address data is correctly
- * stored and formatted.
+ * Tests the Address value object.
+ * Validates that the location data required for potential region-based
+ * parking strategies is correctly stored and formatted.
  */
 public class AddressTest {
-
-    private Address testAddress;
+private Address address;
+    private final String STREET = "2199 S University Blvd";
+    private final String CITY = "Denver";
+    private final String STATE = "CO";
+    private final String ZIP = "80208";
 
     @BeforeEach
     public void setUp() {
-        // Initialize a standard address for testing
-        testAddress = new Address(
-                "123 University Blvd",
-                "Suite 100",
-                "Denver",
-                "CO",
-                "80204");
+        // Matches the constructor: (Street, City, State, Zip)
+        address = new Address(STREET, CITY, STATE, ZIP);
     }
 
     @Test
-    public void testAddressGetters() {
-        // Verify each individual field is retrieved correctly
-        assertEquals("123 University Blvd", testAddress.getStreetAddress1());
-        assertEquals("Suite 100", testAddress.getStreetAddress2());
-        assertEquals("Denver", testAddress.getCity());
-        assertEquals("CO", testAddress.getState());
-        assertEquals("80204", testAddress.getZip());
+    public void testGetters() {
+        assertEquals(STREET, address.getStreetAddress1());
+        assertEquals(CITY, address.getCity());
+        assertEquals(STATE, address.getState());
+        assertEquals(ZIP, address.getZipCode());
     }
 
     @Test
-    public void testAddressWithEmptyStreet2() {
-        // Ensure the class handles addresses without a second street line
-        var simpleAddress = new Address("456 Oak St"," Apt 12B", "Aurora", "CO","80204");
-
-        assertEquals(" Apt 12B", simpleAddress.getStreetAddress2());
-        assertEquals("456 Oak St", simpleAddress.getStreetAddress1());
+    public void testSetters() {
+        address.setCity("Aurora");
+        address.setZipCode("80012");
+        
+        assertEquals("Aurora", address.getCity());
+        assertEquals("80012", address.getZipCode());
     }
 
     @Test
-    public void testToStringFormat() {
-        // Often, addresses have a toString() for labels or UI display.
-        // If you implemented one, this verifies the format.
-        String output = testAddress.toString();
-
-        assertNotNull(output);
-        assertTrue(output.contains("123 University Blvd"), "ToString should contain street 1");
-        assertTrue(output.contains("Denver"), "ToString should contain city");
-        assertTrue(output.contains("80204"), "ToString should contain zip");
+    public void testToString() {
+        String output = address.toString();
+        // Verifies the formatted string: "2199 S University Blvd, Denver, CO 80208"
+        assertTrue(output.contains(STREET));
+        assertTrue(output.contains(CITY));
+        assertTrue(output.contains(ZIP));
     }
 }

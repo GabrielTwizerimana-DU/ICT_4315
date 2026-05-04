@@ -6,41 +6,44 @@
 
 package edu.du.ict4315.parking3.strategies;
 
-import edu.du.ict4315.parking1.controller.commands.ParkingPermit;
-import edu.du.ict4315.parking1.domain.model.classes.CarType;
+import edu.du.ict4315.parking1.controller.commands.ParkingTransaction;
 import edu.du.ict4315.parking1.domain.model.classes.Money;
 import java.time.DayOfWeek;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
- * A concrete strategy that applies a 50% discount on weekends.
- * This demonstrates a "Decorator-like" logic within the Strategy pattern.
+ * Strategy that applies a discounted rate for weekend parking.
+ * Adheres to the Strategy Pattern and Information Expert principle.
  */
 public class WeekendDiscountStrategy implements ParkingChargeStrategy {
+
+    private static final double WEEKEND_RATE = 5.0;  // Discounted rate
+    private static final double WEEKDAY_RATE = 15.0; // Standard rate
+
     /**
-     * Calculates the fee by applying a weekend discount to standard rates.
-     * 
-     * @param permit The permit providing vehicle details.
-     * @return A Money object with the discounted (or standard) amount.
+     * Calculates the fee based on the day of the week of the entry.
+     * @param transaction The expert object containing stay data.
+     * @return A Money object representing the calculated fee.
      */
     @Override
-    public Money calculateFee(ParkingPermit permit) {
-        CarType type = permit.getCar().getType();
-        
-        // Base Weekday Rates
-        double amount = switch (type) {
-            case COMPACT -> 10.00;
-            case SUV -> 15.00;
-            case TRUCK -> 20.00;
-            default -> 12.00;
-        };
-
-        // Apply 50% discount if it's the weekend
-        DayOfWeek day = LocalDate.now().getDayOfWeek();
-        if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
-            amount = amount * 0.5;
+    public Money calculateFee(ParkingTransaction transaction) {
+        if (transaction == null || transaction.getEntryTime() == null) {
+            return new Money(0.0);
         }
 
-        return new Money(amount, "USD");
+        // Information Expert: Transaction provides the entry time
+        LocalDateTime entryTime = transaction.getEntryTime();
+        DayOfWeek day = entryTime.getDayOfWeek();
+
+        double amount;
+
+        // Apply discount if it's Saturday or Sunday
+        if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
+            amount = WEEKEND_RATE;
+        } else {
+            amount = WEEKDAY_RATE;
+        }
+
+        return new Money(amount);
     }
 }

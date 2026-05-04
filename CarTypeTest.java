@@ -4,40 +4,37 @@
  * Author: Gabriel Twizerimana
  */
 
-package edu.university.parking.assignment1.domain.model.classes.test;
+package edu.du.ict4315.parking1.domain.model.classes.test;
 
-import edu.university.parking.assignment1.domain.model.classes.CarType;
+import edu.du.ict4315.parking1.domain.model.classes.CarType;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for the CarType enum.
- * Ensures the required vehicle categories exist for pricing logic.
+ * Tests the CarType enum.
+ * Ensures all required vehicle categories are present for the 
+ * Strategy Factory to perform type-based fee calculations.
  */
 public class CarTypeTest {
-
-    @Test
-    public void testEnumValuesExistence() {
-        // Verifies that the required types for Release 2 exist in the Enum
-        assertNotNull(CarType.valueOf("SUV"), "SUV type must be defined for strategy multipliers.");
-        assertNotNull(CarType.valueOf("COMPACT"), "COMPACT type must be defined for base rate logic.");
-    }
-
-    @Test
-    public void testEnumToString() {
-        // Ensures the names are formatted correctly for UI or logging
-        assertEquals("SUV", CarType.SUV.toString());
-        assertEquals("COMPACT", CarType.COMPACT.toString());
+@Test
+    public void testEnumConstants() {
+        // Verify the presence of all required types for the Strategy Factory
+        assertNotNull(CarType.valueOf("COMPACT"));
+        assertNotNull(CarType.valueOf("SUV"));
+        assertNotNull(CarType.valueOf("TRUCK"));
+        assertNotNull(CarType.valueOf("VAN"));
     }
 
     @Test
     public void testEnumEquality() {
-        // Confirms that Enum constants work with standard equality checks
-        CarType type1 = CarType.SUV;
-        CarType type2 = CarType.SUV;
-        CarType type3 = CarType.COMPACT;
+        // Ensure the constants are unique and comparable
+        assertSame(CarType.COMPACT, CarType.valueOf("COMPACT"));
+        assertNotSame(CarType.SUV, CarType.COMPACT);
+    }
 
-        assertSame(type1, type2, "Same enum constants must be referentially equal.");
-        assertNotSame(type1, type3, "Different enum constants must not be equal.");
+    @Test
+    public void testEnumLength() {
+        // Ensures no unexpected types have been added or removed
+        assertEquals(4, CarType.values().length, "CarType enum should have exactly 4 types.");
     }
 }

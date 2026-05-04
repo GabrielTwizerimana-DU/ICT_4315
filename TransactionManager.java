@@ -2,65 +2,89 @@
  * File: TransactionManager.java
  * Author: Gabriel Twizerimana
  */
-package edu.du.ict4315.parking4.charges.factory;
+package edu.du.ict4315.parking1.management.layers;
 
+import edu.du.ict4315.parking1.controller.commands.ParkingLot;
 import edu.du.ict4315.parking1.controller.commands.ParkingPermit;
 import edu.du.ict4315.parking1.controller.commands.ParkingTransaction;
 import edu.du.ict4315.parking1.domain.model.classes.Money;
 import edu.du.ict4315.parking3.strategies.ParkingChargeStrategy;
-import java.time.LocalDateTime;
+import edu.du.ict4315.parking3.strategies.TypeBasedStrategy;
+import edu.du.ict4315.parking5.observer.pattern.ParkingAction;
+import edu.du.ict4315.parking5.observer.pattern.ParkingEvent;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import edu.du.ict4315.parking5.observer.pattern.ParkingObserver;
 
 /**
- * Manages parking transactions by coordinating with the Strategy Factory.
- * Resolves the "Incompatible Types" error by ensuring the lot is treated as a
- * String and the Factory is used to retrieve the pricing logic.
+ * The Observer in the pattern. Manages the lifecycle of parking transactions
+ * based on events received from ParkingLots
  */
-public class TransactionManager {
+  
 
-    private final List<ParkingTransaction> transactions;
-    private final ParkingChargeStrategyFactory strategyFactory;
+    public class TransactionManager implements ParkingObserver {
 
-    public TransactionManager() {
-        this.transactions = new ArrayList<>();
-        // Initializing the factory ensures it is available for use in park()
-        this.strategyFactory = new ParkingChargeStrategyFactory();
+        private final Map<String, ParkingTransaction> activeTransactions = new HashMap<>();
+        private final List<ParkingTransaction> completedTransactions = new ArrayList<>();
+        private final ParkingChargeStrategy strategy;
+        
+        public TransactionManager() {
+        // Initializes with a default strategy
+        this.strategy = new TypeBasedStrategy(); 
     }
 
-    /**
-     * Records a new parking event.
-     *
-     * @param permit The ParkingPermit object.
-     * @param parkingLot The name of the lot (passed as a String).
-     * @param strategyName The pricing strategy identifier (e.g., "WEEKDAY").
-     * @return The created ParkingTransaction.
-     */
-    public ParkingTransaction park(ParkingPermit permit, String parkingLot, String strategyName) {
+        /**
+         * Implementation of the Observer interface. Resolves error: "cannot
+         * find symbol: method getEventType()"
+         */
+        @Override
+        public void update(ParkingEvent event) {
+            ParkingAction action = event.getEventType();
+            ParkingLot lot = event.getLot();
+            ParkingPermit permit = event.getPermit();
 
-        // 1. USE the factory (resolves "never read" warning)
-        // Converts the String "WEEKDAY" into a Strategy object
-        ParkingChargeStrategy strategy = strategyFactory.getStrategy(strategyName);
+            if (action == ParkingAction.ENTER) {
+                handleEntry(lot, permit);
+            } else if (action == ParkingAction.EXIT) {
+                handleExit(lot, permit);
+            }
+        }
 
-        // 2. Calculate the fee using the strategy
-        Money fee = strategy.calculateFee(permit);
+        private void handleEntry(ParkingLot lot, ParkingPermit permit) {
+            ParkingTransaction transaction = new ParkingTransaction(permit, lot, java.time.LocalDateTime.now());
+            activeTransactions.put(permit.getId(), transaction);
+            System.out.println("Transaction started for permit: " + permit.getId());
+        }
 
-        // 3. Create the transaction record
-        // CRITICAL: Ensure the order matches your ParkingTransaction constructor!
-        // Order: (Date, String, Permit, Money)
-        ParkingTransaction transaction = new ParkingTransaction(
-                LocalDateTime.now(),
-                parkingLot,
-                permit,
-                fee
-        );
+        private void handleExit(ParkingLot lot, ParkingPermit permit) {
+            ParkingTransaction transaction = activeTransactions.remove(permit.getId());
+            if (transaction != null) {
+                transaction.setExitTime(java.time.LocalDateTime.now());
+                
+                Money calculatedFee = strategy.calculateFee(transaction);
 
-        // 4. Store and return the result
-        transactions.add(transaction);
-        return transaction;
+                if (calculatedFee == null) {
+                    transaction.setFee(new Money(0.0)); // Fallback
+                } else {
+                    transaction.setFee(calculatedFee);
+                }
+
+            }
+
+            completedTransactions.add(transaction);
+            activeTransactions.remove(permit.getId());
+            System.out.println("Transaction completed for permit: " + permit.getId());
+            System.out.println("Exit processed for lot: " + lot.getName());
+        }
+    
+
+    public ParkingTransaction getActiveTransaction(String permitId) {
+        return activeTransactions.get(permitId);
     }
 
-    public List<ParkingTransaction> getTransactions() {
-        return new ArrayList<>(transactions);
+    public List<ParkingTransaction> getCompletedTransactions() {
+        return new ArrayList<>(completedTransactions);
     }
-}
+    }

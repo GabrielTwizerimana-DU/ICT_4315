@@ -2,114 +2,101 @@
  * File: Customer.java
  * Author: Gabriel Twizerimana
  */
-package edu.university.parking.assignment1.controller.commands;
+package edu.du.ict4315.parking1.domain.model.classes;
 
-import edu.university.parking.assignment1.domain.model.classes.Address;
-import java.util.Objects;
+import edu.du.ict4315.parking1.controller.commands.ParkingPermit;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Represents a customer in the parking system.
+ * Represents a customer who owns vehicles in the parking system
+ * Acts as an information expert for owner-based pricing strategies
  */
 public class Customer {
-
-    private final String firstName;
-    private final String lastName;
-    private String id;
-    private Address address;
+private final String id;
+    private String name;
     private String phoneNumber;
+    private final List<Car> cars = new ArrayList<>();
+    private final List<ParkingPermit> permits = new ArrayList<>();
 
     /**
-     * Full constructor for the Customer class. Order: First Name, Last Name,
-     * ID, Address, Phone
-     *
-     * @param firstName
-     * @param lastName
-     * @param id
-     * @param address
-     * @param phoneNumber
+     * @param id The permanent unique identifier for the customer.
+     * @param name The customer's full name.
+     * @param phoneNumber The customer's contact number.
      */
-    public Customer( String firstName, String lastName, String id, Address address, String phoneNumber) {
-        this.firstName = firstName;
-        this.lastName = lastName;
-         this.id = id;
-        this.address = address;
+    public Customer(String id, String name, String phoneNumber) {
+        this.id = id;
+        this.name = name;
         this.phoneNumber = phoneNumber;
     }
 
-    public Customer(String c101, String alice_Smith, String _Elm_St, String string) {
-        this.firstName = null;
-        this.lastName = null;
-        this.id = null ;
-    }
-
-    // --- Getters ---
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
+    /**
+     * Returns the permanent unique ID of the customer.
+     * @return String id
+     */
     public String getId() {
-        return id; // Returns the String ID, not the object reference
+        return id;
     }
 
-    public Address getAddress() {
-        return address;
+    /**
+     * Returns the customer's name.
+     * @return String name
+     */
+    public String getName() {
+        return name;
     }
 
+    /**
+     * Updates the customer's name.
+     * @param name The new name to set.
+     */
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    /**
+     * Returns the customer's phone number.
+     * @return String phoneNumber
+     */
     public String getPhoneNumber() {
         return phoneNumber;
     }
 
-    // --- Setters (Optional based on your UML) ---
-    public void setAddress(Address address) {
-        this.address = address;
-    }
-
+    /**
+     * Updates the customer's phone number.
+     * @param phoneNumber The new phone number to set.
+     */
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
     }
+    
+    public void addCar(Car car) {
+        if (car != null) {
+            this.cars.add(car);
+        }
+    }
+    
+    public void addPermit(ParkingPermit permit) {
+    if (permit != null) {
+        this.permits.add(permit);
+    }
+}
 
-    /**
-     * Overridden to provide readable identification in logs and tests. This
-     * prevents the "expected true but was false" errors in CarTest.
-     *
-     * @return
-     */
+    public List<Car> getCars() {
+        return cars;
+    }
+
+    public List<ParkingPermit> getPermits() {
+        return permits;
+    }
+    
+ 
+    
+    
+
     @Override
     public String toString() {
-        return "Customer{"
-                + "name='" + firstName + " " + lastName + '\''
-                + ", id='" + id + '\''
-                + '}';
-    }
-
-    /**
-     * Equals method to help ParkingOffice find specific customers.
-     *
-     * @param o
-     */
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-    if (!(o instanceof Customer)) return false; // More flexible than getClass()
-    Customer other = (Customer) o;
-    
-    // Check if either ID is null to prevent NullPointerException
-    if (this.id == null || other.id == null) return false;
-    
-    // TRIM the IDs just in case there are hidden spaces from a database/input
-    return this.id.trim().equalsIgnoreCase(other.id.trim());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
-    }
-
-    public String getName() {
-       return firstName + "" + lastName;
+        return String.format("Customer[ID: %s, Name: %s, Phone: %s]", 
+                id, name, phoneNumber);
     }
 }

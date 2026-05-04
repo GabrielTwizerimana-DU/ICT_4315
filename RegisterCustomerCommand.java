@@ -1,69 +1,47 @@
-
 /**
  * File: RegisterCustomerCommand.java
  * Author: Gabriel Twizerimana
  */
+package edu.du.ict4315.parking1.controller.commands;
 
-package edu.university.parking.assignment1.controller.commands;
+import edu.du.ict4315.parking1.domain.model.classes.Customer;
+import java.util.Map;
 
-import edu.university.parking.assignment1.domain.model.classes.Address;
-import java.util.Properties;
-
+/**
+ * Command to register a new customer in the parking system
+ * This utilizes the ParkingService to maintain consistency across the office
+ */
 public class RegisterCustomerCommand implements Command {
-    // Variable renamed from 'office' to 'parkingOffice'
-    private final ParkingOffice parkingOffice;
+private final ParkingOffice office;
+    private final String id;
+    private final String name;
+    private final String address;
 
-    public RegisterCustomerCommand(ParkingOffice parkingOffice) {
-        this.parkingOffice = parkingOffice;
+    public RegisterCustomerCommand(ParkingOffice office, String id, String name, String address) {
+        this.office = office;
+        this.id = id;
+        this.name = name;
+        this.address = address;
     }
 
-    @Override
-    public String getCommandName() {
-        return "CUSTOMER";
-    }
-
-    public String getDisplayName() {
-        return "Register Customer";
-    }
-
-    @Override
-    public String execute(Properties params) {
-     
-        if (params == null) {
-            return "Error: No parameters provided";
+    /**
+     * Executes the customer registration logic.
+     * Resolves error: "cannot find symbol: method registerCustomer"
+     * @param data
+     * @return 
+     */
+@Override
+    public String execute(Map<String, String> data) {
+        if (id == null || name == null) {
+            return "Registration Failed: Missing ID or Name.";
         }
 
-        // Now it is safe to proceed with extraction
-        String id = params.getProperty("id");
-        
-        if (id == null || id.isEmpty()) {
-            return "Error: Missing Customer ID";
-        }
+        // 1. Create the real Customer instance
+        Customer customer = new Customer(id, name, address);
 
-    try {
-            Address addr = new Address(
-                params.getProperty("streetAddress1"),
-                params.getProperty("streetAddress2"),
-                params.getProperty("city"),
-                params.getProperty("state"),
-                params.getProperty("zip") // Added the 5th argument
-            );
+        // 2. Register with the office
+        office.registerCustomer(customer);
 
-            Customer customer = new Customer(
-                params.getProperty("firstName"),
-                params.getProperty("lastName"),
-                id,
-                addr,
-                params.getProperty("phone")
-            );
-
-            parkingOffice.register(customer);
-            return id;
-
-        } catch (Exception e) {
-            // This will now catch any remaining "Not supported yet" stubs 
-            // in Customer or ParkingOffice
-            return "Error: Registration failed - " + e.getMessage();
-        }
+        return String.format("Success: Customer %s (%s) has been registered.", name, id);
     }
 }

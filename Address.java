@@ -4,45 +4,35 @@
  * Author: Gabriel Twizerimana
  */
 
-package edu.university.parking.assignment1.domain.model.classes;
+package edu.du.ict4315.parking1.domain.model.classes;
 
 /**
- * Represents a physical mailing address. Used by both Customers and the Parking
- * Office.
+ * A Value Object representing a physical address.
+ * Required for Customer instantiation in the Command Pattern.
  */
-
 public class Address {
-
-    private final String streetAddress1;
-    private final String streetAddress2;
-    private final String city;
-    private final String state;
-    private final String zip;
+private String streetAddress1;
+    private String city;
+    private String state;
+    private String zipCode;
 
     /**
-     * Constructor for a complete Address.
-     *
+     * Constructor for Assignment 4.
+     * Order: Street, City, State, Zip.
      * @param streetAddress1
-     * @param streetAddress2
      * @param city
      * @param state
-     * @param zip
+     * @param zipCode
      */
-    public Address(String streetAddress1, String streetAddress2, String city, String state, String zip) {
+    public Address(String streetAddress1, String city, String state, String zipCode) {
         this.streetAddress1 = streetAddress1;
-        this.streetAddress2 = streetAddress2;
         this.city = city;
         this.state = state;
-        this.zip = zip;
+        this.zipCode = zipCode;
     }
 
-    // --- Standard UML Getters ---
     public String getStreetAddress1() {
         return streetAddress1;
-    }
-
-    public String getStreetAddress2() {
-        return streetAddress2;
     }
 
     public String getCity() {
@@ -53,18 +43,28 @@ public class Address {
         return state;
     }
 
-    public String getZip() {
-        return zip;
+    public String getZipCode() {
+        return zipCode;
     }
 
-    /**
-     * Helper method to print the address in a standard format.
-     *
-     * @return
-     */
+    public void setStreetAddress1(String streetAddress1) {
+        this.streetAddress1 = streetAddress1;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    public void setState(String state) {
+        this.state = state;
+    }
+
+    public void setZipCode(String zipCode) {
+        this.zipCode = zipCode;
+    }
+
     @Override
     public String toString() {
-        String s2 = (streetAddress2 == null || streetAddress2.isEmpty()) ? "" : streetAddress2 + "\n";
-        return String.format("%s\n%s%s, %s %s", streetAddress1, s2, city, state, zip);
+        return String.format("%s, %s, %s %s", streetAddress1, city, state, zipCode);
     }
 }

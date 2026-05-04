@@ -4,67 +4,75 @@
  * Author: Gabriel Twizerimana
  */
 
-package edu.university.parking.assignment1.controller.commands.test;
+package edu.du.ict4315.parking1.domain.model.classes.test;
 
-import edu.university.parking.assignment1.controller.commands.Customer;
-import edu.university.parking.assignment1.domain.model.classes.Address;
+import edu.du.ict4315.parking1.controller.commands.ParkingLot;
+import edu.du.ict4315.parking1.controller.commands.ParkingPermit;
+import edu.du.ict4315.parking1.controller.commands.ParkingTransaction;
+import edu.du.ict4315.parking1.domain.model.classes.Car;
+import edu.du.ict4315.parking1.domain.model.classes.CarType;
+import edu.du.ict4315.parking1.domain.model.classes.Customer;
+import edu.du.ict4315.parking1.management.layers.TransactionManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for the Customer class.
- * Verifies data integrity and object associations.
+ * Tests the Customer class as the Information Expert for personal data
+ * Validates that identity is preserved and contact information is mutable
  */
 public class CustomerTest {
-
-    private Address testAddress;
-    private Customer testCustomer;
+private ParkingLot lot;
+    private TransactionManager manager;
+    private Customer customer;
+    private ParkingPermit permit;
 
     @BeforeEach
     public void setUp() {
-        // Create a standard address for testing
-        testAddress = new Address("123 Main St","cd", "Apt 4", "Denver", "CO");
+        // Initialize the Subject (Lot) and Observer (Manager)
+        lot = new ParkingLot("L1", "Main Lot", 50);
+        manager = new TransactionManager();
         
-        // Initialize the customer
-        testCustomer = new Customer(
-            "Jane", 
-            "Doe", 
-            "CUST-999", 
-            testAddress, 
-            "303-555-1234"
-        );
-    }
+        // Correctly wiring the Observer Pattern
+        lot.addObserver(manager);
 
-    @Test
-    public void testCustomerIdentity() {
-        // Verify that name and ID are stored correctly
-        assertEquals("Jane", testCustomer.getFirstName(), "First name mismatch");
-        assertEquals("Doe", testCustomer.getLastName(), "Last name mismatch");
-        assertEquals("CUST-999", testCustomer.getId(), "Customer ID mismatch");
-    }
-
-    @Test
-    public void testAddressAssociation() {
-        // Verify that the Customer holds the correct Address object (Composition)
-        assertNotNull(testCustomer.getAddress(), "Address should not be null");
-        assertEquals("123 Main St", testCustomer.getAddress().getStreetAddress1());
-        assertEquals("CO", testCustomer.getAddress().getZip());
-    }
-
-    @Test
-    public void testPhoneNumber() {
-        assertEquals("303-555-1234", testCustomer.getPhoneNumber());
-    }
-
-    @Test
-    public void testEquality() {
-        // Testing that two customer objects with the same ID are considered the same
-        // (If you implemented the equals() method in your Customer class)
-        Customer sameCustomer = new Customer("Jane", "Doe", "CUST-999", testAddress, "303-555-1234");
+        // Initialize real Customer and Car
+        customer = new Customer("C-001", "Alice Smith", "123 Maple St");
+        Car car = new Car("BTK-990", CarType.COMPACT, customer);
         
-        // This assumes you override equals() based on the ID
-        // If not, this test might fail, which is a good reminder to add equals()!
-        assertEquals(testCustomer.getId(), sameCustomer.getId());
+        // Initialize Permit
+        permit = new ParkingPermit("P-101", car);
+
+        // Associate the permit with the customer (Information Expert)
+        customer.addPermit(permit);
+    }
+
+    @Test
+    public void testCustomerDataInTransaction() {
+        // Act: Trigger an entry event (Fix: Only pass the permit)
+        lot.enter(permit);
+
+        // Assert: Retrieve the transaction created by the observer
+        ParkingTransaction tx = manager.getActiveTransaction("P-101");
+        
+        assertNotNull(tx, "Transaction should be created via Observer notification.");
+        
+        // Verify the customer data is accessible through the object graph
+        assertEquals("Alice Smith", tx.getPermit().getCar().getOwner().getName());
+        assertTrue(customer.getPermits().contains(tx.getPermit()));
+    }
+
+    @Test
+    public void testCustomerChargeAssociation() {
+        // Setup: Entry and Exit
+        lot.enter(permit);
+        lot.exit(permit);
+
+        // Assert: Verify the finalized transaction
+        ParkingTransaction tx = manager.getCompletedTransactions().get(0);
+        
+        // Verify that the observer finalized the transaction with a fee
+        assertNotNull(tx.getExitTime(), "Exit time should be recorded.");
+        assertTrue(tx.getFee().getAmount() >= 0, "The customer's transaction should have a valid fee.");
     }
 }

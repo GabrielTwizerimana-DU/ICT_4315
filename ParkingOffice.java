@@ -4,151 +4,100 @@
  * Author: Gabriel Twizerimana
  */
 
-package edu.university.parking.assignment1.controller.commands;
+package edu.du.ict4315.parking1.controller.commands;
 
-import edu.university.parking.assignment1.domain.model.classes.ParkingPermit;
-import edu.university.parking.assignment1.domain.model.classes.Address;
-import edu.university.parking.assignment1.domain.model.classes.Car;
-import edu.university.parking.assignment1.domain.model.classes.CarType;
-import edu.university.parking.assignment1.domain.model.classes.Money;
-import edu.university.parking.assignment1.management.layers.PermitManager;
-import edu.university.parking.assignment1.management.layers.TransactionManager;
-import edu.university.parking.assignment3.strategies.TypeBasedStrategy;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import edu.du.ict4315.parking1.domain.model.classes.Customer;
+import java.util.HashMap;
+import java.util.Map;
+import edu.du.ict4315.parking5.observer.pattern.ParkingObserver;
 
 /**
- * The central coordinator for the parking system. Handles registration and
- * delegates to Permit and Transaction managers.
+ * Orchestrates the relationship between lots, customers, and observers
+ * Acts as the Information Expert for the parking system state
  */
 public class ParkingOffice {
-    
-   public TypeBasedStrategy currentStrategy;
+  private final String officeName;
+    private final Map<String, ParkingLot> lots = new HashMap<>();
+    private final Map<String, Customer> customers = new HashMap<>();
+    private final Map<String, ParkingPermit> permits = new HashMap<>();
+    private final ParkingObserver transactionManager;
 
-   private final String parkingOfficeName;
-   private final List<Customer> listOfCustomers;
-   private final List<ParkingLot> listOfParkingLots;
-
-    // Subsystem Managers
-    private final PermitManager permitManager;
-    private final TransactionManager transactionManager;
-
-    public ParkingOffice(String name, Address address) {
-        this.parkingOfficeName = name;
-        this.listOfCustomers = new ArrayList<>();
-        this.listOfParkingLots = new ArrayList<>();
-        this.permitManager = new PermitManager();
-        this.transactionManager = new TransactionManager();
-    }
-
-    public ParkingOffice(String name) {
-        this(name, null); 
+    public ParkingOffice(String officeName, ParkingObserver transactionManager) {
+        this.officeName = officeName;
+        this.transactionManager = transactionManager;
     }
 
     /**
-     * Requirement: Record a parking event.
-     * Delegates calculation to the ParkingLot Strategy and storage to TransactionManager.
-     * @param date
-     * @param permit
+     * Adds a lot to the office and automatically registers the 
+     * TransactionManager as an observer to that lot.
      * @param lot
-     * @return 
      */
-    public ParkingTransaction park(Date date, ParkingPermit permit, ParkingLot lot) {
-        // 1. Convert legacy java.util.Date to modern LocalDateTime
-        // This is required for our Strategy factors (DayOfWeek and Hour)
-        LocalDateTime ldt = date.toInstant()
-                                .atZone(ZoneId.systemDefault())
-                                .toLocalDateTime();
-
-        // 2. The Hook: Tell the lot to calculate the charge based on its assigned Strategy
-        Money finalFee = lot.getCharge(ldt, permit);
-        
-        // 3. Record the transaction in the ledger
-        return transactionManager.park(ldt, permit, lot, finalFee);
-    }
-
-    /**
-     * Requirement: Aggregates total charges for a customer across all their vehicles.
-     * @param customer
-     * @return 
-     */
-    public Money getParkingCharges(Customer customer) {
-        long totalCents = 0;
-
-        // Retrieve only transactions belonging to this specific customer
-        List<ParkingTransaction> transactions = transactionManager.getTransactions(customer);
-
-        for (ParkingTransaction tx : transactions) {
-            totalCents += tx.getChargedAmount().getAmountInCents();
+    public void registerLot(ParkingLot lot) {
+        if (lot != null) {
+            lots.put(lot.getId(), lot);
+            // This fixes the "incompatible types" error by ensuring 
+            // we pass an ParkingObserver, not a ParkingAction.
+            lot.addObserver(transactionManager);
         }
+    }
 
-        return new Money(totalCents, "USD");
+    public ParkingLot getLot(String lotId) {
+        return lots.get(lotId);
+    }
+
+    public String getOfficeName() {
+        return officeName;
     }
     
-    public String register(Customer customer, String licensePlate, CarType type) {
-    // 1. Create the Car object
-    Car newCar = new Car(licensePlate, type, customer);
+    // ADD THIS: Method to register a customer
+    public void registerCustomer(Customer customer) {
+        if (customer != null && customer.getId() != null) {
+            customers.put(customer.getId(), customer);
+        }
+    }
+
+    // ADD THIS: Method to retrieve a customer (used by RegisterCarCommand)
+    public Customer getCustomer(String customerId) {
+        return customers.get(customerId);
+    }
     
-    // 2. Register the car (this likely calls your existing logic 
-    // that saves the car and returns a permit ID)
-    return this.register(newCar); 
+    /**
+ * Registers a permit in the office's global registry.
+     * @param permit
+ */
+public void registerPermit(ParkingPermit permit) {
+    if (permit != null) {
+        permits.put(permit.getId(), permit);
+    }
 }
+
+    public Map<String, ParkingLot> getLots() {
+        return lots;
+    }
+
+    public Map<String, Customer> getCustomers() {
+        return customers;
+    }
+
+    public Map<String, ParkingPermit> getPermits() {
+        return permits;
+    }
+
+    public ParkingObserver getTransactionManager() {
+        return transactionManager;
+    }
+
+
 
     /**
-     * Registration logic
-     * @param customer
-     * @return 
+     * Resolves errors where observers were being handled as actions.
+     * @param observer
      */
-    public String register(Customer customer) {
-        listOfCustomers.add(customer);
-        return customer.getId();
+    public void addObserverToAllLots(ParkingObserver observer) {
+        for (ParkingLot lot : lots.values()) {
+            lot.addObserver(observer);
+        }
     }
-
-    public String register(Car car) {
-        // Delegates to PermitManager to create and store the permit
-        ParkingPermit permit = permitManager.register(car);
-  
-        return (permit != null) ? permit.getId(): null; 
     }
+    
 
-    public Customer getCustomer(String customerId) {
-      if (customerId == null) return null;
-
-    return listOfCustomers.stream()
-        .filter(c -> c.getId().equals(customerId)) // Ensure this is getId(), not getName()!
-        .findFirst()
-        .orElse(null);
-    }
-
-    public ParkingPermit getPermitForCar(String licensePlate) {
-        return permitManager.getPermitForCar(licensePlate);
-    }
-
-    // --- Management Methods ---
-    public void addParkingLot(ParkingLot lot) {
-        this.listOfParkingLots.add(lot);
-    }
-
-    public List<ParkingLot> getListOfParkingLots() {
-        return new ArrayList<>(listOfParkingLots);
-    }
-
-    public String getParkingOfficeName() {
-        return parkingOfficeName;
-    }
-
-    public List<Customer> getListOfCustomers() {
-        return new ArrayList<>(listOfCustomers);
-    }
-
- public void setPricingStrategy(TypeBasedStrategy strategy) {
-     
-    this.currentStrategy = strategy;
-    // Log it so you can see it working in the console
-    System.out.println("Pricing strategy updated for office: " + parkingOfficeName);
-}
-
-}

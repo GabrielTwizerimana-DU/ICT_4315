@@ -3,70 +3,58 @@
  * Author: Gabriel Twizerimana
  */
 
-package edu.university.parking.assignment1.management.layers;
+package edu.du.ict4315.parking1.management.layers;
 
-import edu.university.parking.assignment1.domain.model.classes.ParkingPermit;
-import edu.university.parking.assignment1.domain.model.classes.Car;
-import java.util.ArrayList;
+import edu.du.ict4315.parking1.controller.commands.ParkingPermit;
+import edu.du.ict4315.parking1.domain.model.classes.Car;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
- * Manages the issuance and tracking of ParkingPermits.
- * Handles the logic for the "register(Car)" operation.
+ * Manages the issuance and tracking of ParkingPermits
+ * Ensures each permit is uniquely identified and linked to a vehicle
  */
 public class PermitManager {
-    
-       private final List<ParkingPermit> permits = new ArrayList<>();
-  
-    // We use a Map for O(1) lookup speed by license plate
-    private final Map<String, ParkingPermit> permitsByPlate;
+// Maps Permit ID to the actual Permit object for efficient lookup
+    private final Map<String, ParkingPermit> permits;
 
     public PermitManager() {
-        this.permitsByPlate = new HashMap<>();
+        this.permits = new HashMap<>();
     }
 
     /**
-     * Requirement: Create and store a new permit for a car.
-     * * @param car The vehicle being registered.
-     * @param car
-     * @return The newly created ParkingPermit.
+     * Issues a new permit for a specific car.
+     * 
+     * @param permitId The unique identifier for the new permit.
+     * @param car The vehicle associated with this permit.
+     * @return The created ParkingPermit object.
      */
-   
-    public ParkingPermit register(Car car) {
+    public ParkingPermit registerPermit(String permitId, Car car) {
+        if (permitId == null || car == null) {
+            throw new IllegalArgumentException("Permit ID and Car cannot be null.");
+        }
         
-       // 1. Create the permit (Logic for generating a unique ID)
-       String permitId = "P-" + UUID.randomUUID().toString().substring(0, 8);
         ParkingPermit newPermit = new ParkingPermit(permitId, car);
-        
-        // 2. IMPORTANT: Save it to the internal list
-        permits.add(newPermit);
-        
-        // 3. Return the object so the Office can get the ID
+        permits.put(permitId, newPermit);
         return newPermit;
     }
 
     /**
-     * Helper for the ParkingOffice: Find a permit so we can park the car.
-     * * @param licensePlate
-     * @param licensePlate
+     * Retrieves a permit by its unique ID.
+     * Used by the ParkingService to validate permits during entry/exit.
+     * 
+     * @param permitId The ID to search for.
      * @return The ParkingPermit, or null if not found.
      */
-    public ParkingPermit getPermitForCar(String licensePlate) {
-       return permits.stream()
-                .filter(p -> p.getCar().getLicensePlate().equals(licensePlate))
-                .findFirst()
-                .orElse(null);
+    public ParkingPermit getPermit(String permitId) {
+        return permits.get(permitId);
     }
 
     /**
-     * Verification check for the Strategy algorithms.
-     * @param licensePlate
+     * Returns a collection of all issued permits.
      * @return 
      */
-    public boolean hasValidPermit(String licensePlate) {
-        return permitsByPlate.containsKey(licensePlate);
+    public Map<String, ParkingPermit> getAllPermits() {
+        return new HashMap<>(permits);
     }
 }

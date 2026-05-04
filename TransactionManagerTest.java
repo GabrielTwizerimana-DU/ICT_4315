@@ -1,71 +1,74 @@
-
 /**
  * File: TransactionManagerTest.java
  * Author: Gabriel Twizerimana
  */
+package edu.du.ict4315.parking1.management.layers.test;
 
-package edu.du.ict4315.parking.management.layers.test;
-
+import edu.du.ict4315.parking1.controller.commands.ParkingLot;
+import edu.du.ict4315.parking1.controller.commands.ParkingPermit;
 import edu.du.ict4315.parking1.controller.commands.ParkingTransaction;
 import edu.du.ict4315.parking1.domain.model.classes.Car;
 import edu.du.ict4315.parking1.domain.model.classes.CarType;
-import edu.du.ict4315.parking1.controller.commands.ParkingPermit;
-import edu.du.ict4315.parking1.domain.model.classes.Address;
 import edu.du.ict4315.parking1.domain.model.classes.Customer;
-import edu.du.ict4315.parking4.charges.factory.TransactionManager;
-import java.util.List;
+import edu.du.ict4315.parking1.management.layers.TransactionManager;
+import edu.du.ict4315.parking5.observer.pattern.ParkingAction;
+import edu.du.ict4315.parking5.observer.pattern.ParkingEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Integration test for TransactionManager using real object instances Verifies
+ * that the manager correctly reacts to Observer events
+ */
 public class TransactionManagerTest {
-  private TransactionManager transactionManager;
+
+    private TransactionManager manager;
+    private ParkingLot lot;
     private ParkingPermit permit;
-    private final String LOT_NAME = "North Garage";
 
     @BeforeEach
     public void setUp() {
-        transactionManager = new TransactionManager();
+        manager = new TransactionManager();
+        lot = new ParkingLot("L1", "South Lot", 100);
 
-        // Build the required object graph for the Strategy Factory to use
-        Address address = new Address("2199 S University Blvd", "Denver", "CO", "80208");
-        Customer customer = new Customer("C1", "Gaby", address);
-        Car car = new Car("BTK-555", CarType.SUV, customer);
-        permit = new ParkingPermit("P-101", car,null );
+        // Initialize real domain objects (No Mocks)
+        Customer customer = new Customer("C-202", "Jane Doe", "321 Pine St");
+        Car car = new Car("GHY-456", CarType.SUV, customer);
+        permit = new ParkingPermit("P-202", car);
+
+        // Register the manager as an observer to the lot
+        lot.addObserver(manager);
     }
 
     @Test
-    public void testParkRecordsTransaction() {
-        // We use "WEEKDAY" as the strategy name, assuming it's implemented in your Factory
-        String strategyName = "WEEKDAY";
-        ParkingTransaction transaction = transactionManager.park(permit, LOT_NAME, strategyName);
+    public void testUpdateOnEntry() {
+        // Create the event that a Subject (Lot) would broadcast
+        ParkingEvent event = new ParkingEvent(lot, permit, ParkingAction.ENTER);
 
-        // 1. Verify transaction was created and returned
-        assertNotNull(transaction, "The park method should return a valid transaction object.");
-        
-        // 2. Verify lot information (Fixes the "lot not found" context)
-        assertEquals(LOT_NAME, transaction.getLot(), "The transaction should record the correct lot name.");
+        // FIX: The manager is updated via update(), not park()
+        manager.update(event);
 
-        // 3. Verify permit linkage
-        assertEquals(permit, transaction.getPermit(), "The transaction must be linked to the provided permit.");
-
-        // 4. Verify financial data (Money object)
-        assertNotNull(transaction.getAmount(), "The transaction must contain a calculated fee.");
-        assertTrue(transaction.getAmount().getAmount() > 0, "The fee amount should be greater than zero.");
-        
-        // 5. Verify storage in manager
-        List<ParkingTransaction> allTransactions = transactionManager.getTransactions();
-        assertEquals(1, allTransactions.size(), "Manager should have one recorded transaction.");
-        assertEquals(transaction, allTransactions.get(0));
+        ParkingTransaction activeTx = manager.getActiveTransaction("P-202");
+        assertNotNull(activeTx, "Transaction should be active after entry event.");
+        assertEquals(lot, activeTx.getLot(), "Transaction must record the correct lot.");
     }
 
     @Test
-    public void testParkTimestampIsRecent() {
-        ParkingTransaction transaction = transactionManager.park(permit, LOT_NAME, "WEEKDAY");
-        
-        assertNotNull(transaction.getDate(), "Transaction should have a timestamp.");
-        // Basic check to ensure it wasn't initialized to a default like LocalDateTime.MIN
-        assertTrue(transaction.getDate().isAfter(java.time.LocalDateTime.now().minusMinutes(1)), 
-            "Timestamp should reflect the current time of parking.");
+    public void testFullParkingLifecycle() {
+        // 1. Simulate Entry via Observer update
+        manager.update(new ParkingEvent(lot, permit, ParkingAction.ENTER));
+
+        // 2. Simulate Exit via Observer update
+        manager.update(new ParkingEvent(lot, permit, ParkingAction.EXIT));
+
+        // Verify the transaction moved from active to completed
+        assertNull(manager.getActiveTransaction("P-202"), "Transaction should be removed from active map.");
+        assertEquals(1, manager.getCompletedTransactions().size());
+
+        // 3. Verify the Fee Calculation (Information Expert logic)
+        ParkingTransaction completedTx = manager.getCompletedTransactions().get(0);
+        assertNotNull(completedTx.getFee(), "Finalized transaction must have a fee.");
+        assertTrue(completedTx.getFee().getAmount() >= 0, "Fee should be a non-negative Money amount.");
     }
 }

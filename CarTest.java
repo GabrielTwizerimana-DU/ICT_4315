@@ -2,61 +2,69 @@
  * File: CarTest.java
  * Author: Gabriel Twizerimana
  */
-package edu.university.parking.assignment1.domain.model.classes.test;
+package edu.du.ict4315.parking1.domain.model.classes.test;
 
-import edu.university.parking.assignment1.controller.commands.Customer;
-import edu.university.parking.assignment1.domain.model.classes.Car;
-import edu.university.parking.assignment1.domain.model.classes.CarType;
+import edu.du.ict4315.parking1.controller.commands.ParkingLot;
+import edu.du.ict4315.parking1.controller.commands.ParkingPermit;
+import edu.du.ict4315.parking1.controller.commands.ParkingTransaction;
+import edu.du.ict4315.parking1.domain.model.classes.Customer;
+import edu.du.ict4315.parking1.domain.model.classes.Car;
+import edu.du.ict4315.parking1.domain.model.classes.CarType;
+import edu.du.ict4315.parking1.management.layers.TransactionManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for the Car class. verifies vehicle data and its association with
- * a Customer.
+ * Verifies Car data integrity as it moves through the Observer chain
+ * Resolves errors related to argument length in enter() and Car constructor
  */
 public class CarTest {
-
-    private Customer testOwner;
-    private Car testCar;
+    private ParkingLot lot;
+    private TransactionManager manager;
+    private Car car;
+    private ParkingPermit permit;
+    private Customer customer;
 
     @BeforeEach
     public void setUp() {
-        // Create a owner first to associate with the car
-        testOwner = new Customer("Jim", "Halpert", "C-102", null, "555-1111");
-        testCar = new Car("SCRANTON-1", CarType.COMPACT, testOwner);
+        // Initialize the Subject and Observer
+        lot = new ParkingLot("L1", "North Lot", 50);
+        manager = new TransactionManager();
+        lot.addObserver(manager);
+
+        // Initialize Customer first (required for Car constructor)
+        customer = new Customer("C-99", "Test User", "456 Lane");
+
+        // FIX: Pass 3 arguments (license, type, owner) to match the Car constructor
+        car = new Car("DEV-2026", CarType.SUV, customer);
+        permit = new ParkingPermit("P-101", car);
     }
 
     @Test
-    public void testCarIdentity() {
-        // Verify the license plate and type are stored correctly
-        assertEquals("SCRANTON-1", testCar.getLicensePlate());
-        assertEquals(CarType.COMPACT, testCar.getType());
+    public void testCarDataIntegrityInNotification() {
+        // FIX: lot.enter() now only requires the permit
+        lot.enter(permit); 
+
+        // Assert: Retrieve the transaction created by the observer
+        ParkingTransaction tx = manager.getActiveTransaction("P-101");
+
+        assertNotNull(tx, "Transaction should exist in the manager.");
+        assertEquals("DEV-2026", tx.getPermit().getCar().getLicensePlate());
+        assertEquals(CarType.SUV, tx.getPermit().getCar().getType());
     }
 
     @Test
-    public void testOwnerAssociation() {
-        // Ensure the car correctly points to its owner
-        assertNotNull(testCar.getOwner());
-        assertEquals("Jim", testCar.getOwner().getFirstName());
-        assertEquals("C-102", testCar.getOwner().getId());
-    }
+    public void testCarTypeImpactsObserverLogic() {
+        // Act: Trigger entry and exit
+        lot.enter(permit);
+        lot.exit(permit);
 
-    @Test
-    public void testCarTypeEnum() {
-        // Verify we can change or set different car types
-        Car suvCar = new Car("SUV-99", CarType.SUV, testOwner);
-        assertEquals(CarType.SUV, suvCar.getType(), "Should correctly identify as SUV");
-
-        // Ensure it is specifically the Enum type and not just a String
-        assertTrue(suvCar.getType() instanceof CarType);
-    }
-
-    @Test
-    public void testToString() {
-        // Verifies the readable output for logs or UI
-        String output = testCar.toString();
-        assertTrue(output.contains("SCRANTON-1"));
-        assertTrue(output.contains("COMPACT"));
+        // Assert: Verify the Observer used the Car's type to calculate the fee
+        ParkingTransaction tx = manager.getCompletedTransactions().get(0);
+        
+        assertNotNull(tx.getFee(), "Fee object should not be null.");
+        // Ensure we check the amount inside the Money object
+        assertTrue(tx.getFee().getAmount() > 0, "Fee should be calculated based on SUV CarType.");
     }
 }
