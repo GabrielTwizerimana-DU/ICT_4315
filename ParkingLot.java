@@ -6,14 +6,13 @@ package edu.du.ict4315.parking1.controller.commands;
 
 import edu.du.ict4315.parking5.observer.pattern.ParkingAction;
 import edu.du.ict4315.parking5.observer.pattern.ParkingEvent;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import edu.du.ict4315.parking5.observer.pattern.ParkingObserver;
 
 /**
- * The Subject in the Observer pattern. Broadcasts entry and exit events to
- * registered ParkingAction observers.
+ * The Subject in the Observer pattern
+ * Broadcasts entry and exit events to registered ParkingAction observers
  */
 public class ParkingLot {
 
@@ -21,6 +20,9 @@ public class ParkingLot {
     private final String name;
     private final int capacity;
     private final List<ParkingObserver> observers = new ArrayList<>();
+    private double baseHourlyRate;
+    private boolean holidayRateActive;
+    private boolean isPremium = false;
 
     public ParkingLot(String id, String name, int capacity) {
         this.id = id;
@@ -78,6 +80,31 @@ public class ParkingLot {
 
     public List<ParkingObserver> getObservers() {
         return observers;
+    }
+    
+    public double getBaseHourlyRate() {
+        return baseHourlyRate;
+    }
+
+    public void setBaseHourlyRate(double baseHourlyRate) {
+        this.baseHourlyRate = baseHourlyRate;
+    }
+    
+    public boolean isHolidayRateActive() {
+        return holidayRateActive;
+    }
+
+    public void setHolidayRateActive(boolean holidayRateActive) {
+        this.holidayRateActive = holidayRateActive;
+    }
+   
+    public void setPremium(boolean premium) {
+        this.isPremium = premium;
+    }
+
+    
+    public boolean isPremium() {
+        return isPremium;
     }
 
     @Override
