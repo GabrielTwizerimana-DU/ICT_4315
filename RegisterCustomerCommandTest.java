@@ -1,78 +1,93 @@
 
-package edu.university.parking.assignment1.controller.commands.test;
+/**
+ * File: RegisterCustomerCommandTest.java
+ * Author: Gabriel Twizerimana
+ */
 
-import edu.university.parking.assignment1.controller.commands.Customer;
-import edu.university.parking.assignment1.controller.commands.ParkingOffice;
-import edu.university.parking.assignment1.controller.commands.RegisterCustomerCommand;
+package edu.du.ict4315.parking8.shared.test;
+
+import edu.du.ict4315.parking1.domain.model.classes.Customer;
+import edu.du.ict4315.parking1.controller.commands.ParkingOffice;
+import edu.du.ict4315.parking5.observer.pattern.ParkingObserver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import java.util.Properties;
+import com.google.gson.Gson;
+import edu.du.ict4315.parking8.shared.RegisterCustomerCommand;
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for the RegisterCustomerCommand class.
- * Verifies the mapping of input properties to the ParkingOffice data store.
- */
 public class RegisterCustomerCommandTest {
 
-    private ParkingOffice parkingOffice;
-    private RegisterCustomerCommand command;
+    private final Gson gson = new Gson();
+    private ParkingOffice fakeOffice;
+    private ParkingObserver dummyObserver;
 
     @BeforeEach
     public void setUp() {
-        // Initialize the receiver (Office) and the command
-        parkingOffice = new ParkingOffice("Main Office", null);
-        command = new RegisterCustomerCommand(parkingOffice) {};
+        // Instantiate a quick inline observer lambda to satisfy the updated ParkingOffice constructor
+        dummyObserver = event -> {
+            /* no-op test spy */ };
+        fakeOffice = new ParkingOffice("TEST_OFFICE_01", dummyObserver);
     }
 
     @Test
-    public void testGetCommandName() {
-        assertEquals("CUSTOMER", command.getCommandName(), "Command name must be CUSTOMER");
+    public void testCommandNetworkSerializationLifecycle() {
+        // Arrange - Create command from client perspective (no office object available on client)
+        RegisterCustomerCommand commandOut = new RegisterCustomerCommand(null, "CUST-99", "Gabriel", "555-0199");
+
+        // Act - Turn the command itself into the JSON stream payload
+        String jsonPayload = gson.toJson(commandOut);
+
+        // Assert - Verify that properties are packed, but the context engine is completely omitted
+        assertNotNull(jsonPayload, "Serialized JSON command stream should not be null.");
+        assertTrue(jsonPayload.contains("\"id\":\"CUST-99\""), "JSON should capture the target customer ID.");
+        assertTrue(jsonPayload.contains("\"name\":\"Gabriel\""), "JSON should capture the customer name.");
+        assertTrue(jsonPayload.contains("\"phoneNumber\":\"555-0199\""), "JSON should capture the phone number string.");
+
+        // CRITICAL CHECK: Ensure transient field is skipped entirely
+        assertFalse(jsonPayload.contains("\"office\""), "The stateful 'office' context must never leak across the socket network.");
     }
 
     @Test
-    public void testExecuteSuccessfulRegistration() {
-        // 1. Prepare simulated input properties
-        Properties props = new Properties();
-        props.setProperty("firstName", "John");
-        props.setProperty("lastName", "Doe");
-        props.setProperty("id", "CUST-001");
-        props.setProperty("streetAddress1", "123 Uni Way");
-        props.setProperty("city", "Denver");
-        props.setProperty("state", "CO");
-        props.setProperty("zip", "80204");
-        props.setProperty("phone", "555-0101");
+    public void testServerSideDeserializationAndContextInjection() {
+        // Arrange - Simulate a clean raw payload reaching the Server loop
+        String incomingJson = "{\"id\":\"CUST-99\",\"name\":\"Gabriel\",\"phoneNumber\":\"555-0199\"}";
 
-        // 2. Execute the command
-        String resultId = command.execute(props);
+        // Act - Reconstruct the exact command directly using reflection via blank constructor
+        RegisterCustomerCommand commandIn = gson.fromJson(incomingJson, RegisterCustomerCommand.class);
 
-        // 3. Assertions
-        assertEquals("CUST-001", resultId, "The command should return the registered Customer ID");
-        
-        // Verify the customer was actually added to the ParkingOffice
-        assertEquals(1, parkingOffice.getListOfCustomers().size(), "Office should have 1 customer registered");
-        
-        Customer savedCustomer = parkingOffice.getListOfCustomers().get(0);
-        assertEquals("John", savedCustomer.getFirstName());
-        assertEquals("123 Uni Way", savedCustomer.getAddress().getStreetAddress1());
+        // Assert - Verify data properties restored successfully
+        assertNotNull(commandIn);
+        assertEquals("CUST-99", commandIn.getId());
+        assertEquals("Gabriel", commandIn.getName());
+        assertEquals("555-0199", commandIn.getPhoneNumber());
+        assertNull(commandIn.getOffice(), "The office field must start out null upon deserialization.");
+
+        // Act - Inject the server's local office context before triggering execution
+        commandIn.setOffice(fakeOffice);
+
+        // Assert - The command is fully re-hydrated and runs successfully against domain logic
+        assertNotNull(commandIn.getOffice());
+        String executionResult = commandIn.execute(null);
+
+        assertTrue(executionResult.contains("Success"), "Command should finish running with a success signal confirmation.");
+        assertTrue(executionResult.contains("Gabriel"), "The return string should confirm the registered name.");
+
+        // Secondary verification: Verify domain model state actually mutated inside the office engine
+        Customer verifiedCustomer = fakeOffice.getCustomer("CUST-99");
+        assertNotNull(verifiedCustomer, "Customer should be saved in the ParkingOffice memory space.");
+        assertEquals("Gabriel", verifiedCustomer.getName());
     }
 
     @Test
-    public void testExecuteWithMissingId() {
-        // Test behavior when the mandatory 'id' is missing
-        Properties incompleteProps = new Properties();
-        incompleteProps.setProperty("firstName", "Jane");
-        
-        String result = command.execute(incompleteProps);
-        
-        assertTrue(result.contains("Error"), "Should return an error message when ID is missing");
-        assertEquals(0, parkingOffice.getListOfCustomers().size(), "No customer should be registered on failure");
-    }
+    public void testNoArgConstructorState() {
+        // Arrange & Act - Execute blank instance setup used by reflection libraries
+        RegisterCustomerCommand command = new RegisterCustomerCommand();
 
-    @Test
-    public void testExecuteWithNullProperties() {
-        // Safety check for null input
-        String result = command.execute(null);
-        assertTrue(result.contains("Error"), "Should handle null properties gracefully");
+        // Assert - Ensure standard default JVM pointer defaults match up
+        assertNull(command.getId());
+        assertNull(command.getName());
+        assertNull(command.getPhoneNumber());
+        assertNull(command.getOffice());
+
     }
 }
