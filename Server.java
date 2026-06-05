@@ -4,92 +4,81 @@
  * Author: Gabriel Twizerimana
  */
 
-package edu.du.ict4315.parking9.server;
+package edu.du.ict4315.parking10.dependencyinjection;
 
-import edu.du.ict4315.parking9.server.ClientHandler;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 import edu.du.ict4315.parking1.controller.commands.ParkingOffice;
-import edu.du.ict4315.parking5.observer.pattern.ParkingObserver;
+import edu.du.ict4315.parking9.server.ClientHandler;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Thread-pool-driven server capable of hosting concurrent socket connection paths
+ * Refactor your server entry-point to let Guice manage thread pools, object lifecycles
+ * and connection handling
  */
 public class Server {
 
     private final ParkingOffice office;
+    private final ExecutorService threadPool;
     private ServerSocket serverSocket;
-    private ExecutorService threadPool;
     private volatile boolean running = false;
-    
-    // Define structural thread pool scaling limits
-    private static final int POOL_SIZE = 10; 
 
-    public Server(ParkingOffice office) {
+    // The @Inject annotation tells Guice to resolve and provide these parameters automatically
+    @Inject
+    public Server(ParkingOffice office, ExecutorService threadPool) {
         this.office = office;
+        this.threadPool = threadPool;
     }
 
-    /**
-     * Instantiates the fixed thread pool executor and launches the accept processing loop.
-     * @param port
-     */
     public void start(int port) {
         running = true;
-        threadPool = Executors.newFixedThreadPool(POOL_SIZE);
-        
         try {
             serverSocket = new ServerSocket(port);
-            System.out.println("Multithreaded Server listening on port " + port + " with a thread pool of " + POOL_SIZE);
+            System.out.println("Guice-Injected Server listening concurrently on port " + port);
 
             while (running) {
                 Socket clientSocket = serverSocket.accept();
-                
-                // Construct a separate handler execution unit
-                ClientHandler handler = new ClientHandler(clientSocket, this.office);
-                
-                // Submit the task to the pool to run concurrently
-                threadPool.submit(handler);
+                // Pass the injected office context directly into the handler task
+                threadPool.submit(new ClientHandler(clientSocket, this.office));
             }
         } catch (IOException e) {
-            if (running) {
-                System.err.println("Server exception encountered: " + e.getMessage());
-            }
+            if (running) System.err.println("Server exception: " + e.getMessage());
         }
     }
 
-    /**
-     * Coordinates a clean termination sequence for active sockets and background thread jobs.
-     */
     public void stop() {
         running = false;
         if (threadPool != null) {
-            threadPool.shutdown(); // Stop accepting new tasks
+            threadPool.shutdown();
             try {
-                if (!threadPool.awaitTermination(3, TimeUnit.SECONDS)) {
-                    threadPool.shutdownNow(); // Force kill remaining tasks
+                if (!threadPool.awaitTermination(2, TimeUnit.SECONDS)) {
+                    threadPool.shutdownNow();
                 }
             } catch (InterruptedException e) {
                 threadPool.shutdownNow();
             }
         }
-        
         if (serverSocket != null && !serverSocket.isClosed()) {
             try {
                 serverSocket.close();
-                System.out.println("Server socket terminated cleanly.");
             } catch (IOException e) {
-                System.err.println("Error closing server socket: " + e.getMessage());
+                System.err.println("Error closing socket: " + e.getMessage());
             }
         }
     }
 
     public static void main(String[] args) {
-        ParkingObserver customObserver = event -> System.out.println("[Event Stream] " + event);
-        ParkingOffice productionOffice = new ParkingOffice("Main_Office_01", customObserver); 
-        new Server(productionOffice).start(12345);
+        // Boot up the Guice kernel framework configuration module
+        Injector injector = Guice.createInjector(new ParkingModule());
+        
+        // Let Guice instantiate and wire up the Server with all its dependencies
+        Server server = injector.getInstance(Server.class);
+        server.start(12345);
     }
 }
